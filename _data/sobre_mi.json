@@ -1,0 +1,10 @@
+{
+  "titulo": "Sobre mí",
+  "intro": "Soy Carlos, vivo en Chiapas y este es mi rincón para contar mi día. Aquí te dejo un poco de lo que me gusta.\nPuedo cambiar este texto cuando quiera desde mi panel.",
+  "bloques": [
+    { "emoji": "📺", "titulo": "Caricaturas que amo", "items": ["Pocoyo", "Bubble Guppies"] },
+    { "emoji": "🪄", "titulo": "Mi top de siempre", "items": ["Harry Potter", "Miraculous", "Marvel"] },
+    { "emoji": "👻", "titulo": "Mi lado spooky", "items": ["Chucky"] },
+    { "emoji": "🎤", "titulo": "Mis cantantes favoritos", "items": [] }
+  ]
+}

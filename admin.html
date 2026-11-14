@@ -56,6 +56,18 @@
       .item { grid-template-columns: auto 1fr auto; }
       .item .acciones { grid-column: auto; }
     }
+    h2.sub-panel { font-size: 1.5rem; margin: 2rem 0 0.25rem; }
+    textarea.corta { min-height: 8rem; }
+    .bloque-ed {
+      display: grid; gap: 0.75rem; margin: 0 0 1rem; padding: 1rem;
+      background: var(--papel); border: var(--grosor) solid var(--tinta);
+      border-radius: 18px; box-shadow: 3px 3px 0 var(--tinta);
+    }
+    .bloque-fila { display: flex; gap: 0.6rem; }
+    input.in-emoji { width: 4.5rem; flex: none; text-align: center; font-size: 1.4rem; padding-inline: 0.4rem; }
+    textarea.in-items { min-height: 7rem; box-shadow: none; }
+    .bloque-botones { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    #sobre-bloques + .acciones-editor { margin-top: 0.5rem; }
   </style>
 </head>
 <body>
@@ -82,6 +94,7 @@
       <div class="pestanas" role="group" aria-label="Secciones del panel">
         <button type="button" class="chip" id="tab-escribir" aria-pressed="true">✏️ Escribir</button>
         <button type="button" class="chip" id="tab-entradas" aria-pressed="false">📚 Mis entradas</button>
+        <button type="button" class="chip" id="tab-sobre" aria-pressed="false">🙋 Sobre mí</button>
       </div>
 
       <!-- Editor: nueva entrada o edición -->
@@ -129,6 +142,23 @@
         <p id="estado-lista" class="estado" role="status" aria-live="polite" hidden></p>
         <ol id="lista-entradas" class="lista-admin"></ol>
       </div>
+
+      <!-- Página "Sobre mí" -->
+      <div id="vista-sobre" hidden>
+        <h1 class="titulo-panel">Sobre mí</h1>
+        <div class="campo">
+          <label for="sobre-intro">Presentación</label>
+          <textarea id="sobre-intro" class="corta"></textarea>
+        </div>
+        <h2 class="sub-panel">Mis favoritos</h2>
+        <p class="ayuda">Cada bloque es una tarjeta en tu página. Escribe un favorito por línea.</p>
+        <div id="sobre-bloques"></div>
+        <div class="acciones-editor">
+          <button type="button" id="sobre-agregar" class="btn btn-suave">+ Agregar bloque</button>
+          <button type="button" id="sobre-guardar" class="btn">Guardar</button>
+        </div>
+        <p id="estado-sobre" class="estado" role="status" aria-live="polite" hidden></p>
+      </div>
     </section>
   </main>
 
@@ -147,6 +177,9 @@
     let moodActual = '🙂';
     let editando = null; // { path, sha, extras, fechaLinea, fechaInput }
     const itemsPorRuta = new Map();
+    const RUTA_SOBRE = '_data/sobre_mi.json';
+    let sobreSha = null;
+    let sobreCargado = false;
 
     /* ---------- Token ---------- */
     function leerToken() { try { return localStorage.getItem('blog_token') || ''; } catch (e) { return ''; } }
@@ -184,12 +217,12 @@
       el.className = 'estado ' + (tipo || '');
       el.hidden = false;
     }
-    function mostrarEnlace(el, antes, url, despues) {
+    function mostrarEnlace(el, antes, url, despues, textoEnlace) {
       el.textContent = '';
       el.className = 'estado ok';
       el.append(antes + ' ');
       const a = document.createElement('a');
-      a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Ver la entrada';
+      a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = textoEnlace || 'Ver la entrada';
       el.append(a, ' ' + despues);
       el.hidden = false;
     }
@@ -213,12 +246,13 @@
       $('salir').hidden = true;
     }
     function mostrarSeccion(nombre) {
-      const escribir = nombre === 'escribir';
-      $('vista-editor').hidden = !escribir;
-      $('vista-entradas').hidden = escribir;
-      $('tab-escribir').setAttribute('aria-pressed', String(escribir));
-      $('tab-entradas').setAttribute('aria-pressed', String(!escribir));
-      if (!escribir) cargarLista();
+      const secciones = { escribir: 'vista-editor', entradas: 'vista-entradas', sobre: 'vista-sobre' };
+      Object.keys(secciones).forEach((k) => { $(secciones[k]).hidden = k !== nombre; });
+      $('tab-escribir').setAttribute('aria-pressed', String(nombre === 'escribir'));
+      $('tab-entradas').setAttribute('aria-pressed', String(nombre === 'entradas'));
+      $('tab-sobre').setAttribute('aria-pressed', String(nombre === 'sobre'));
+      if (nombre === 'entradas') cargarLista();
+      if (nombre === 'sobre' && !sobreCargado) cargarSobre();
     }
 
     async function entrar() {
@@ -246,6 +280,7 @@
     function salir() {
       borrarToken();
       editando = null;
+      sobreCargado = false;
       irALogin();
     }
 
@@ -612,6 +647,108 @@
       }
     }
 
+    /* ---------- Sobre mí ---------- */
+    function crearBloqueEditor(b) {
+      const caja = el('div', 'bloque-ed');
+      const fila = el('div', 'bloque-fila');
+      const emoji = el('input', 'in-emoji');
+      emoji.type = 'text'; emoji.maxLength = 8; emoji.value = b.emoji || '';
+      emoji.placeholder = '🎤'; emoji.setAttribute('aria-label', 'Emoji del bloque');
+      const titulo = el('input', 'in-titulo');
+      titulo.type = 'text'; titulo.maxLength = 60; titulo.value = b.titulo || '';
+      titulo.placeholder = 'Ej. Mis cantantes favoritos'; titulo.setAttribute('aria-label', 'Título del bloque');
+      fila.append(emoji, titulo);
+
+      const items = el('textarea', 'in-items');
+      items.rows = 4; items.value = (b.items || []).join('\n');
+      items.placeholder = 'Un favorito por línea'; items.setAttribute('aria-label', 'Favoritos, uno por línea');
+
+      const botones = el('div', 'bloque-botones');
+      const subir = el('button', 'btn btn-suave', 'Subir');
+      subir.type = 'button';
+      subir.addEventListener('click', () => {
+        const prev = caja.previousElementSibling;
+        if (prev) caja.parentNode.insertBefore(caja, prev);
+      });
+      const bajar = el('button', 'btn btn-suave', 'Bajar');
+      bajar.type = 'button';
+      bajar.addEventListener('click', () => {
+        const sig = caja.nextElementSibling;
+        if (sig) caja.parentNode.insertBefore(sig, caja);
+      });
+      const quitar = el('button', 'btn btn-suave btn-peligro', 'Quitar');
+      quitar.type = 'button';
+      quitar.addEventListener('click', () => caja.remove());
+      botones.append(subir, bajar, quitar);
+
+      caja.append(fila, items, botones);
+      return caja;
+    }
+    function pintarSobre(d) {
+      $('sobre-intro').value = d.intro || '';
+      const cont = $('sobre-bloques');
+      cont.textContent = '';
+      (d.bloques || []).forEach((b) => cont.append(crearBloqueEditor(b)));
+    }
+    function leerSobre() {
+      const bloques = Array.from($('sobre-bloques').children).map((caja) => ({
+        emoji: caja.querySelector('.in-emoji').value.trim(),
+        titulo: caja.querySelector('.in-titulo').value.trim(),
+        items: caja.querySelector('.in-items').value.split('\n').map((x) => x.trim()).filter(Boolean)
+      })).filter((b) => b.titulo || b.items.length);
+      return { titulo: 'Sobre mí', intro: $('sobre-intro').value.trim(), bloques: bloques };
+    }
+    async function cargarSobre() {
+      const estado = $('estado-sobre');
+      mostrar(estado, 'Cargando tu página...');
+      try {
+        const r = await gh('/contents/' + RUTA_SOBRE + '?ref=' + BRANCH, { cache: 'no-store' });
+        let datos = { intro: '', bloques: [] };
+        if (r.status === 404) {
+          sobreSha = null;
+        } else if (!r.ok) {
+          throw new Error(mensajeHttp(r.status));
+        } else {
+          const d = await r.json();
+          sobreSha = d.sha;
+          datos = JSON.parse(deBase64(d.content || ''));
+        }
+        pintarSobre(datos);
+        sobreCargado = true;
+        estado.hidden = true;
+      } catch (e) {
+        mostrar(estado, e.message || 'No se pudo cargar tu página. Revisa tu internet.', 'error');
+      }
+    }
+    async function guardarSobre() {
+      const estado = $('estado-sobre');
+      const datos = leerSobre();
+      if (!datos.intro && !datos.bloques.length) {
+        mostrar(estado, 'Escribe una presentación o agrega al menos un bloque.', 'error');
+        return;
+      }
+      const cuerpo = {
+        message: 'Actualizar Sobre mí',
+        content: aBase64(JSON.stringify(datos, null, 2) + '\n'),
+        branch: BRANCH
+      };
+      if (sobreSha) cuerpo.sha = sobreSha;
+      $('sobre-guardar').disabled = true;
+      mostrar(estado, 'Guardando...');
+      try {
+        const r = await gh('/contents/' + RUTA_SOBRE, { method: 'PUT', body: JSON.stringify(cuerpo) });
+        if (r.status === 409 || r.status === 422) throw new Error('Esta página cambió desde otro lado. Recarga el panel e inténtalo de nuevo.');
+        if (!r.ok) throw new Error(mensajeHttp(r.status));
+        const d = await r.json().catch(() => ({}));
+        if (d.content && d.content.sha) sobreSha = d.content.sha;
+        mostrarEnlace(estado, 'Guardado.', SITIO + 'sobre-mi/', '(el sitio tarda 1 o 2 minutos en actualizarse).', 'Ver la página');
+      } catch (e) {
+        mostrar(estado, e.message || 'No se pudo guardar. Revisa tu internet.', 'error');
+      } finally {
+        $('sobre-guardar').disabled = false;
+      }
+    }
+
     /* ---------- Inicio ---------- */
     pintarMoods();
     $('fecha').value = ahoraLocal();
@@ -625,6 +762,13 @@
     $('salir').addEventListener('click', salir);
     $('tab-escribir').addEventListener('click', () => mostrarSeccion('escribir'));
     $('tab-entradas').addEventListener('click', () => mostrarSeccion('entradas'));
+    $('tab-sobre').addEventListener('click', () => mostrarSeccion('sobre'));
+    $('sobre-agregar').addEventListener('click', () => {
+      const caja = crearBloqueEditor({ emoji: '⭐', titulo: '', items: [] });
+      $('sobre-bloques').append(caja);
+      caja.querySelector('.in-titulo').focus();
+    });
+    $('sobre-guardar').addEventListener('click', guardarSobre);
 
     if (leerToken()) irAPanel(); else irALogin();
   </script>

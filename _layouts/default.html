@@ -17,6 +17,9 @@
 <body>
   <header class="cabecera">
     <a class="marca" href="{{ '/' | relative_url }}">{{ site.title }}</a>
+    <nav class="menu" aria-label="Principal">
+      <a href="{{ '/sobre-mi/' | relative_url }}"{% if page.url == '/sobre-mi/' %} aria-current="page"{% endif %}>Sobre mí</a>
+    </nav>
   </header>
   <main class="contenido">
     {{ content }}
