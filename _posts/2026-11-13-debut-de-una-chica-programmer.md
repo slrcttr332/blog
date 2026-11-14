@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "debut de una chica programmer"
+title: "i seem pretty boring for a boy so busy :D"
 date: 2026-11-13 21:52:00 -0600
 mood: "😴"
 tags: ["familia","descanso"]
