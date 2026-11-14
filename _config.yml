@@ -1,0 +1,11 @@
+title: Cómo me fue hoy
+description: Mi día, escrito sin prisa.
+lang: es
+url: "https://slrcttr332.github.io"
+baseurl: "/blog"
+timezone: America/Mexico_City
+future: true
+markdown: kramdown
+permalink: /:year/:month/:day/:title/
+exclude:
+  - README.md

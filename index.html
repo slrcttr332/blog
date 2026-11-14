@@ -1,0 +1,26 @@
+---
+layout: default
+---
+<section class="intro">
+  <h1>Hola, soy Carlos.</h1>
+  <p>Aquí cuento cómo me fue en el día: lo bueno, lo raro y lo que no quiero olvidar.</p>
+</section>
+
+{% if site.posts.size == 0 %}
+  <p class="vacio">Todavía no hay entradas. La primera aparece en cuanto la publiques desde el panel.</p>
+{% else %}
+<ol class="lista">
+  {% for post in site.posts %}
+  <li class="entrada">
+    <time class="entrada-fecha" datetime="{{ post.date | date_to_xmlschema }}">{% include fecha.html fecha=post.date %}</time>
+    <div class="entrada-cuerpo">
+      <h2><a href="{{ post.url | relative_url }}">{% if post.mood %}{{ post.mood }} {% endif %}{{ post.title }}</a></h2>
+      <p>{{ post.excerpt | strip_html | truncate: 150 }}</p>
+      {% if post.tags.size > 0 %}
+      <p class="etiquetas">{% for tag in post.tags %}<span class="etiqueta">#{{ tag }}</span>{% endfor %}</p>
+      {% endif %}
+    </div>
+  </li>
+  {% endfor %}
+</ol>
+{% endif %}
