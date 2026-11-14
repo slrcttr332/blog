@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Panel | Cómo me fue hoy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    .barra { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .campo { margin: 0 0 1.4rem; border: 0; padding: 0; }
+    .campo label, .campo legend { display: block; font-weight: 600; margin-bottom: 0.35rem; padding: 0; }
+    .ayuda { color: var(--suave); font-size: 0.9rem; margin: 0.3rem 0 0; }
+    input[type="text"], input[type="password"], input[type="datetime-local"], textarea {
+      width: 100%; font: inherit; color: var(--tinta); background: transparent;
+      border: 1px solid var(--linea); border-radius: 8px; padding: 0.6rem 0.8rem;
+    }
+    textarea { min-height: 16rem; resize: vertical; line-height: 1.6; }
+    input:focus-visible, textarea:focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; }
+    .btn {
+      font-family: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif; font-weight: 700; font-size: 1rem;
+      background: var(--acento); color: var(--fondo); border: 0; border-radius: 8px;
+      padding: 0.7rem 1.3rem; cursor: pointer;
+    }
+    .btn:disabled { opacity: 0.55; cursor: wait; }
+    .btn:focus-visible, .mood-op:focus-visible { outline: 3px solid var(--acento); outline-offset: 3px; }
+    .btn-suave { background: transparent; color: var(--acento); border: 1px solid var(--linea); font-size: 0.9rem; padding: 0.4rem 0.9rem; }
+    .moods { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .mood-op {
+      font-size: 1.6rem; line-height: 1; background: transparent; border: 2px solid var(--linea);
+      border-radius: 10px; padding: 0.4rem 0.55rem; cursor: pointer;
+    }
+    .mood-op[aria-pressed="true"] { border-color: var(--acento); background: var(--acento-fondo); }
+    .estado { margin: 1.2rem 0 0; padding: 0.8rem 1rem; border-radius: 8px; border: 1px solid var(--linea); }
+    .estado[hidden] { display: none; }
+    .estado.ok { border-color: var(--acento); background: var(--acento-fondo); }
+    .estado.error { border-color: #d6455d; }
+    h1.titulo-panel { font-size: clamp(1.8rem, 5vw, 2.4rem); margin: 0.5rem 0 1.5rem; }
+  </style>
+</head>
+<body>
+  <header class="cabecera barra">
+    <a class="marca" href="./">Cómo me fue hoy</a>
+    <button type="button" id="salir" class="btn btn-suave" hidden>Cerrar sesión</button>
+  </header>
+
+  <main class="contenido">
+    <!-- Entrada al panel -->
+    <section id="vista-login" hidden>
+      <h1 class="titulo-panel">Entrar al panel</h1>
+      <p>Pega tu token de GitHub. Se guarda solo en este navegador.</p>
+      <div class="campo">
+        <label for="token">Token de GitHub</label>
+        <input type="password" id="token" autocomplete="off" placeholder="github_pat_...">
+      </div>
+      <button type="button" id="entrar" class="btn">Entrar</button>
+      <p id="estado-login" class="estado" role="status" hidden></p>
+    </section>
+
+    <!-- Editor -->
+    <section id="vista-editor" hidden>
+      <h1 class="titulo-panel">Nueva entrada</h1>
+
+      <div class="campo">
+        <label for="titulo">Título</label>
+        <input type="text" id="titulo" maxlength="120" autocomplete="off">
+      </div>
+
+      <fieldset class="campo">
+        <legend>¿Cómo te fue?</legend>
+        <div class="moods" id="moods"></div>
+      </fieldset>
+
+      <div class="campo">
+        <label for="fecha">Fecha y hora</label>
+        <input type="datetime-local" id="fecha">
+      </div>
+
+      <div class="campo">
+        <label for="etiquetas">Etiquetas</label>
+        <input type="text" id="etiquetas" autocomplete="off" placeholder="escuela, familia, comida">
+        <p class="ayuda">Sepáralas con comas.</p>
+      </div>
+
+      <div class="campo">
+        <label for="texto">Texto</label>
+        <textarea id="texto"></textarea>
+        <p class="ayuda">Puedes usar Markdown: **negritas**, *cursiva*, listas con guiones y &gt; para citas.</p>
+      </div>
+
+      <button type="button" id="publicar" class="btn">Publicar</button>
+      <p id="estado-editor" class="estado" role="status" aria-live="polite" hidden></p>
+    </section>
+  </main>
+
+  <script>
+    const OWNER = 'slrcttr332';
+    const REPO = 'blog';
+    const BRANCH = 'main';
+    const API = 'https://api.github.com/repos/' + OWNER + '/' + REPO;
+    const MOODS = [
+      ['😄', 'Muy bien'], ['🙂', 'Bien'], ['😌', 'Tranquilo'], ['🥳', 'De fiesta'],
+      ['😴', 'Cansado'], ['😤', 'Molesto'], ['😢', 'Triste'], ['🤔', 'Pensativo']
+    ];
+    const $ = (id) => document.getElementById(id);
+    let moodActual = '🙂';
+
+    /* ---------- Token ---------- */
+    function leerToken() { try { return localStorage.getItem('blog_token') || ''; } catch (e) { return ''; } }
+    function guardarToken(t) { try { localStorage.setItem('blog_token', t); } catch (e) {} }
+    function borrarToken() { try { localStorage.removeItem('blog_token'); } catch (e) {} }
+
+    function cabeceras(token) {
+      return {
+        'Accept': 'application/vnd.github+json',
+        'Authorization': 'Bearer ' + token,
+        'X-GitHub-Api-Version': '2022-11-28',
+        'Content-Type': 'application/json'
+      };
+    }
+
+    /* ---------- Mensajes ---------- */
+    function mostrar(el, texto, tipo) {
+      el.textContent = texto;
+      el.className = 'estado ' + (tipo || '');
+      el.hidden = false;
+    }
+    function mostrarEnlace(el, antes, url, despues) {
+      el.textContent = '';
+      el.className = 'estado ok';
+      el.append(antes + ' ');
+      const a = document.createElement('a');
+      a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Ver la entrada';
+      el.append(a, ' ' + despues);
+      el.hidden = false;
+    }
+
+    /* ---------- Vistas ---------- */
+    function irAEditor() {
+      $('vista-login').hidden = true;
+      $('vista-editor').hidden = false;
+      $('salir').hidden = false;
+    }
+    function irALogin() {
+      $('vista-editor').hidden = true;
+      $('vista-login').hidden = false;
+      $('salir').hidden = true;
+    }
+
+    async function entrar() {
+      const token = $('token').value.trim();
+      const estado = $('estado-login');
+      if (!token) { mostrar(estado, 'Pega tu token primero.', 'error'); return; }
+      $('entrar').disabled = true;
+      mostrar(estado, 'Revisando el token...');
+      try {
+        const r = await fetch(API, { headers: cabeceras(token) });
+        if (r.status === 401) throw new Error('El token no es válido o ya venció.');
+        if (r.status === 404) throw new Error('El token no tiene acceso al repositorio ' + REPO + '.');
+        if (!r.ok) throw new Error('GitHub respondió con el error ' + r.status + '.');
+        guardarToken(token);
+        $('token').value = '';
+        estado.hidden = true;
+        irAEditor();
+      } catch (e) {
+        mostrar(estado, e.message || 'No se pudo conectar con GitHub. Revisa tu internet.', 'error');
+      } finally {
+        $('entrar').disabled = false;
+      }
+    }
+
+    function salir() {
+      borrarToken();
+      irALogin();
+    }
+
+    /* ---------- Utilidades ---------- */
+    function slug(s) {
+      return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    }
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function ahoraLocal() {
+      const d = new Date();
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      return d.toISOString().slice(0, 16);
+    }
+    function aBase64(texto) {
+      const bytes = new TextEncoder().encode(texto);
+      let bin = '';
+      bytes.forEach((b) => { bin += String.fromCharCode(b); });
+      return btoa(bin);
+    }
+    function desfase(fecha) {
+      const o = -fecha.getTimezoneOffset();
+      const signo = o >= 0 ? '+' : '-';
+      const a = Math.abs(o);
+      return signo + pad(Math.floor(a / 60)) + pad(a % 60);
+    }
+
+    /* ---------- Borrador automático ---------- */
+    function guardarBorrador() {
+      try {
+        localStorage.setItem('blog_borrador', JSON.stringify({
+          titulo: $('titulo').value, texto: $('texto').value,
+          etiquetas: $('etiquetas').value, mood: moodActual
+        }));
+      } catch (e) {}
+    }
+    function cargarBorrador() {
+      try {
+        const b = JSON.parse(localStorage.getItem('blog_borrador') || 'null');
+        if (!b) return;
+        $('titulo').value = b.titulo || '';
+        $('texto').value = b.texto || '';
+        $('etiquetas').value = b.etiquetas || '';
+        if (b.mood) elegirMood(b.mood);
+      } catch (e) {}
+    }
+    function borrarBorrador() { try { localStorage.removeItem('blog_borrador'); } catch (e) {} }
+
+    /* ---------- Mood ---------- */
+    function elegirMood(emoji) {
+      moodActual = emoji;
+      document.querySelectorAll('.mood-op').forEach((b) => {
+        b.setAttribute('aria-pressed', String(b.dataset.emoji === emoji));
+      });
+    }
+    function pintarMoods() {
+      const cont = $('moods');
+      MOODS.forEach(([emoji, nombre]) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'mood-op';
+        b.dataset.emoji = emoji;
+        b.textContent = emoji;
+        b.title = nombre;
+        b.setAttribute('aria-label', nombre);
+        b.setAttribute('aria-pressed', 'false');
+        b.addEventListener('click', () => { elegirMood(emoji); guardarBorrador(); });
+        cont.append(b);
+      });
+      elegirMood(moodActual);
+    }
+
+    /* ---------- Publicar ---------- */
+    async function publicar() {
+      const estado = $('estado-editor');
+      const titulo = $('titulo').value.trim();
+      const texto = $('texto').value.trim();
+      const valorFecha = $('fecha').value;
+
+      if (!titulo) { mostrar(estado, 'Escribe un título.', 'error'); $('titulo').focus(); return; }
+      if (!texto) { mostrar(estado, 'Escribe el texto de la entrada.', 'error'); $('texto').focus(); return; }
+      if (!valorFecha) { mostrar(estado, 'Elige la fecha y la hora.', 'error'); $('fecha').focus(); return; }
+      const s = slug(titulo);
+      if (!s) { mostrar(estado, 'El título necesita al menos una letra o número.', 'error'); return; }
+
+      const fecha = new Date(valorFecha);
+      const y = valorFecha.slice(0, 4), m = valorFecha.slice(5, 7), d = valorFecha.slice(8, 10);
+      const hora = valorFecha.slice(11, 16);
+      const etiquetas = Array.from(new Set(
+        $('etiquetas').value.split(',').map((t) => slug(t.replace(/^#/, ''))).filter(Boolean)
+      ));
+
+      const contenido =
+        '---\n' +
+        'layout: post\n' +
+        'title: ' + JSON.stringify(titulo) + '\n' +
+        'date: ' + y + '-' + m + '-' + d + ' ' + hora + ':00 ' + desfase(fecha) + '\n' +
+        'mood: ' + JSON.stringify(moodActual) + '\n' +
+        'tags: ' + JSON.stringify(etiquetas) + '\n' +
+        '---\n' + texto + '\n';
+
+      const ruta = '_posts/' + y + '-' + m + '-' + d + '-' + s + '.md';
+      const token = leerToken();
+      $('publicar').disabled = true;
+      mostrar(estado, 'Publicando...');
+
+      try {
+        const r = await fetch(API + '/contents/' + ruta, {
+          method: 'PUT',
+          headers: cabeceras(token),
+          body: JSON.stringify({
+            message: 'Nueva entrada: ' + titulo,
+            content: aBase64(contenido),
+            branch: BRANCH
+          })
+        });
+        if (r.status === 401) { salir(); throw new Error('Tu sesión venció. Vuelve a entrar con un token nuevo.'); }
+        if (r.status === 403 || r.status === 404) throw new Error('El token no puede escribir en el repositorio. Revisa que tenga el permiso Contents: Read and write.');
+        if (r.status === 422) throw new Error('Ya existe una entrada con ese título en ese día. Cambia el título o la fecha.');
+        if (!r.ok) throw new Error('GitHub respondió con el error ' + r.status + '.');
+
+        const url = 'https://' + OWNER + '.github.io/' + REPO + '/' + y + '/' + m + '/' + d + '/' + s + '/';
+        mostrarEnlace(estado, 'Publicado.', url, '(el sitio tarda 1 o 2 minutos en actualizarse).');
+        borrarBorrador();
+        $('titulo').value = '';
+        $('texto').value = '';
+        $('etiquetas').value = '';
+        $('fecha').value = ahoraLocal();
+        elegirMood('🙂');
+      } catch (e) {
+        if ($('vista-login').hidden) {
+          mostrar(estado, e.message || 'No se pudo conectar con GitHub. Revisa tu internet.', 'error');
+        } else {
+          mostrar($('estado-login'), e.message, 'error');
+        }
+      } finally {
+        $('publicar').disabled = false;
+      }
+    }
+
+    /* ---------- Inicio ---------- */
+    pintarMoods();
+    $('fecha').value = ahoraLocal();
+    cargarBorrador();
+    ['titulo', 'texto', 'etiquetas'].forEach((id) => $(id).addEventListener('input', guardarBorrador));
+    $('entrar').addEventListener('click', entrar);
+    $('token').addEventListener('keydown', (e) => { if (e.key === 'Enter') entrar(); });
+    $('publicar').addEventListener('click', publicar);
+    $('salir').addEventListener('click', salir);
+
+    if (leerToken()) irAEditor(); else irALogin();
+  </script>
+</body>
+</html>
