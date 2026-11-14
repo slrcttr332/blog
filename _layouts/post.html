@@ -2,20 +2,22 @@
 layout: default
 ---
 <article class="post">
-  <header class="post-cabecera">
-    {% if page.mood %}<span class="mood" aria-hidden="true">{{ page.mood }}</span>{% endif %}
-    <h1>{{ page.title }}</h1>
-    <p class="meta">
-      <time datetime="{{ page.date | date_to_xmlschema }}">{% include fecha.html fecha=page.date %}</time>
-    </p>
-    {% if page.tags.size > 0 %}
-    <p class="etiquetas">
-      {% for tag in page.tags %}<span class="etiqueta">#{{ tag }}</span>{% endfor %}
-    </p>
-    {% endif %}
-  </header>
-  <div class="texto">
-    {{ content }}
+  <div class="post-hoja">
+    <header class="post-cabecera">
+      {% if page.mood %}<div class="mood" aria-hidden="true">{{ page.mood }}</div>{% endif %}
+      <h1>{{ page.title }}</h1>
+      <p class="meta">
+        <time datetime="{{ page.date | date_to_xmlschema }}">{% include fecha.html fecha=page.date %}</time>
+      </p>
+      {% if page.tags.size > 0 %}
+      <p class="etiquetas">
+        {% for tag in page.tags %}<a class="etiqueta" href="{{ '/' | relative_url }}#{{ tag | slugify }}">#{{ tag }}</a>{% endfor %}
+      </p>
+      {% endif %}
+    </header>
+    <div class="texto">
+      {{ content }}
+    </div>
+    <p class="volver"><a class="btn-enlace" href="{{ '/' | relative_url }}">Volver al inicio</a></p>
   </div>
-  <p class="volver"><a href="{{ '/' | relative_url }}">Volver al inicio</a></p>
 </article>

@@ -7,37 +7,37 @@
   <title>Panel | Cómo me fue hoy</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css">
   <style>
-    .barra { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .cabecera, .contenido, .pie { width: min(100% - 2rem, 46rem); }
     .campo { margin: 0 0 1.4rem; border: 0; padding: 0; }
-    .campo label, .campo legend { display: block; font-weight: 600; margin-bottom: 0.35rem; padding: 0; }
+    .campo label, .campo legend { display: block; font-weight: 700; margin-bottom: 0.35rem; padding: 0; }
     .ayuda { color: var(--suave); font-size: 0.9rem; margin: 0.3rem 0 0; }
     input[type="text"], input[type="password"], input[type="datetime-local"], textarea {
-      width: 100%; font: inherit; color: var(--tinta); background: transparent;
-      border: 1px solid var(--linea); border-radius: 8px; padding: 0.6rem 0.8rem;
+      width: 100%; font: inherit; color: var(--tinta); background: var(--papel);
+      border: var(--grosor) solid var(--tinta); border-radius: 14px; padding: 0.6rem 0.9rem;
+      box-shadow: 3px 3px 0 var(--tinta);
     }
     textarea { min-height: 16rem; resize: vertical; line-height: 1.6; }
-    input:focus-visible, textarea:focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; }
     .btn {
-      font-family: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif; font-weight: 700; font-size: 1rem;
-      background: var(--acento); color: var(--fondo); border: 0; border-radius: 8px;
-      padding: 0.7rem 1.3rem; cursor: pointer;
+      font-family: var(--fuente-titulo); font-weight: 700; font-size: 1.05rem;
+      background: var(--acento); color: #fff; border: var(--grosor) solid var(--tinta);
+      border-radius: 999px; padding: 0.6rem 1.5rem; cursor: pointer; box-shadow: 3px 3px 0 var(--tinta);
     }
     .btn:disabled { opacity: 0.55; cursor: wait; }
-    .btn:focus-visible, .mood-op:focus-visible { outline: 3px solid var(--acento); outline-offset: 3px; }
-    .btn-suave { background: transparent; color: var(--acento); border: 1px solid var(--linea); font-size: 0.9rem; padding: 0.4rem 0.9rem; }
+    .btn-suave { background: var(--papel); color: var(--tinta); font-size: 0.9rem; padding: 0.35rem 1rem; }
     .moods { display: flex; flex-wrap: wrap; gap: 0.5rem; }
     .mood-op {
-      font-size: 1.6rem; line-height: 1; background: transparent; border: 2px solid var(--linea);
-      border-radius: 10px; padding: 0.4rem 0.55rem; cursor: pointer;
+      font-size: 1.6rem; line-height: 1; background: var(--papel); border: 2.5px solid var(--tinta);
+      border-radius: 50%; width: 3.2rem; height: 3.2rem; cursor: pointer;
     }
-    .mood-op[aria-pressed="true"] { border-color: var(--acento); background: var(--acento-fondo); }
-    .estado { margin: 1.2rem 0 0; padding: 0.8rem 1rem; border-radius: 8px; border: 1px solid var(--linea); }
+    .mood-op[aria-pressed="true"] { background: var(--amarillo); box-shadow: 3px 3px 0 var(--tinta); }
+    .mood-op:focus-visible { outline: 4px solid var(--enlace); outline-offset: 3px; }
+    .estado { margin: 1.2rem 0 0; padding: 0.8rem 1rem; border-radius: 14px; border: var(--grosor) solid var(--tinta); background: var(--papel); font-weight: 600; }
     .estado[hidden] { display: none; }
-    .estado.ok { border-color: var(--acento); background: var(--acento-fondo); }
-    .estado.error { border-color: #d6455d; }
+    .estado.ok { background: var(--menta); }
+    .estado.error { background: #ffd6dc; }
     h1.titulo-panel { font-size: clamp(1.8rem, 5vw, 2.4rem); margin: 0.5rem 0 1.5rem; }
   </style>
 </head>
