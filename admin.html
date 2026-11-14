@@ -25,8 +25,11 @@
       background: var(--acento); color: #fff; border: var(--grosor) solid var(--tinta);
       border-radius: 999px; padding: 0.6rem 1.5rem; cursor: pointer; box-shadow: 3px 3px 0 var(--tinta);
     }
+    a.btn { display: inline-block; text-decoration: none; }
     .btn:disabled { opacity: 0.55; cursor: wait; }
-    .btn-suave { background: var(--papel); color: var(--tinta); font-size: 0.9rem; padding: 0.35rem 1rem; }
+    .btn-suave { background: var(--papel); color: var(--tinta); font-size: 0.9rem; padding: 0.35rem 1rem; min-height: 2.4rem; }
+    .btn-peligro { background: #ffd6dc; }
+    .acciones-editor { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
     .moods { display: flex; flex-wrap: wrap; gap: 0.5rem; }
     .mood-op {
       font-size: 1.6rem; line-height: 1; background: var(--papel); border: 2.5px solid var(--tinta);
@@ -39,10 +42,24 @@
     .estado.ok { background: var(--menta); }
     .estado.error { background: #ffd6dc; }
     h1.titulo-panel { font-size: clamp(1.8rem, 5vw, 2.4rem); margin: 0.5rem 0 1.5rem; }
+    .pestanas { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.5rem 0 1.5rem; }
+    .lista-admin { list-style: none; margin: 1.25rem 0 0; padding: 0; display: grid; gap: 1rem; }
+    .item {
+      display: grid; grid-template-columns: auto 1fr; gap: 0.6rem 1rem; align-items: center;
+      background: var(--papel); border: var(--grosor) solid var(--tinta); border-radius: 18px;
+      padding: 0.9rem 1rem; box-shadow: 3px 3px 0 var(--tinta);
+    }
+    .item-titulo { display: block; font-family: var(--fuente-titulo); font-size: 1.2rem; line-height: 1.25; overflow-wrap: anywhere; }
+    .item-meta { display: block; color: var(--suave); font-size: 0.9rem; font-weight: 600; overflow-wrap: anywhere; }
+    .item .acciones { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    @media (min-width: 40rem) {
+      .item { grid-template-columns: auto 1fr auto; }
+      .item .acciones { grid-column: auto; }
+    }
   </style>
 </head>
 <body>
-  <header class="cabecera barra">
+  <header class="cabecera">
     <a class="marca" href="./">Cómo me fue hoy</a>
     <button type="button" id="salir" class="btn btn-suave" hidden>Cerrar sesión</button>
   </header>
@@ -60,39 +77,58 @@
       <p id="estado-login" class="estado" role="status" hidden></p>
     </section>
 
-    <!-- Editor -->
-    <section id="vista-editor" hidden>
-      <h1 class="titulo-panel">Nueva entrada</h1>
-
-      <div class="campo">
-        <label for="titulo">Título</label>
-        <input type="text" id="titulo" maxlength="120" autocomplete="off">
+    <!-- Panel -->
+    <section id="vista-panel" hidden>
+      <div class="pestanas" role="group" aria-label="Secciones del panel">
+        <button type="button" class="chip" id="tab-escribir" aria-pressed="true">✏️ Escribir</button>
+        <button type="button" class="chip" id="tab-entradas" aria-pressed="false">📚 Mis entradas</button>
       </div>
 
-      <fieldset class="campo">
-        <legend>¿Cómo te fue?</legend>
-        <div class="moods" id="moods"></div>
-      </fieldset>
+      <!-- Editor: nueva entrada o edición -->
+      <div id="vista-editor">
+        <h1 class="titulo-panel" id="titulo-editor">Nueva entrada</h1>
+        <p class="ayuda" id="aviso-edicion" hidden>Aunque cambies el título, el link de la entrada se queda igual. Si cambias la fecha, el link sí cambia.</p>
 
-      <div class="campo">
-        <label for="fecha">Fecha y hora</label>
-        <input type="datetime-local" id="fecha">
+        <div class="campo">
+          <label for="titulo">Título</label>
+          <input type="text" id="titulo" maxlength="120" autocomplete="off">
+        </div>
+
+        <fieldset class="campo">
+          <legend>¿Cómo te fue?</legend>
+          <div class="moods" id="moods"></div>
+        </fieldset>
+
+        <div class="campo">
+          <label for="fecha">Fecha y hora</label>
+          <input type="datetime-local" id="fecha">
+        </div>
+
+        <div class="campo">
+          <label for="etiquetas">Etiquetas</label>
+          <input type="text" id="etiquetas" autocomplete="off" placeholder="escuela, familia, comida">
+          <p class="ayuda">Sepáralas con comas.</p>
+        </div>
+
+        <div class="campo">
+          <label for="texto">Texto</label>
+          <textarea id="texto"></textarea>
+          <p class="ayuda">Puedes usar Markdown: **negritas**, *cursiva*, listas con guiones y &gt; para citas.</p>
+        </div>
+
+        <div class="acciones-editor">
+          <button type="button" id="publicar" class="btn">Publicar</button>
+          <button type="button" id="cancelar-edicion" class="btn btn-suave" hidden>Cancelar edición</button>
+        </div>
+        <p id="estado-editor" class="estado" role="status" aria-live="polite" hidden></p>
       </div>
 
-      <div class="campo">
-        <label for="etiquetas">Etiquetas</label>
-        <input type="text" id="etiquetas" autocomplete="off" placeholder="escuela, familia, comida">
-        <p class="ayuda">Sepáralas con comas.</p>
+      <!-- Lista de entradas -->
+      <div id="vista-entradas" hidden>
+        <h1 class="titulo-panel">Mis entradas</h1>
+        <p id="estado-lista" class="estado" role="status" aria-live="polite" hidden></p>
+        <ol id="lista-entradas" class="lista-admin"></ol>
       </div>
-
-      <div class="campo">
-        <label for="texto">Texto</label>
-        <textarea id="texto"></textarea>
-        <p class="ayuda">Puedes usar Markdown: **negritas**, *cursiva*, listas con guiones y &gt; para citas.</p>
-      </div>
-
-      <button type="button" id="publicar" class="btn">Publicar</button>
-      <p id="estado-editor" class="estado" role="status" aria-live="polite" hidden></p>
     </section>
   </main>
 
@@ -101,12 +137,16 @@
     const REPO = 'blog';
     const BRANCH = 'main';
     const API = 'https://api.github.com/repos/' + OWNER + '/' + REPO;
+    const SITIO = 'https://' + OWNER + '.github.io/' + REPO + '/';
+    const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
     const MOODS = [
       ['😄', 'Muy bien'], ['🙂', 'Bien'], ['😌', 'Tranquilo'], ['🥳', 'De fiesta'],
       ['😴', 'Cansado'], ['😤', 'Molesto'], ['😢', 'Triste'], ['🤔', 'Pensativo']
     ];
     const $ = (id) => document.getElementById(id);
     let moodActual = '🙂';
+    let editando = null; // { path, sha, extras, fechaLinea, fechaInput }
+    const itemsPorRuta = new Map();
 
     /* ---------- Token ---------- */
     function leerToken() { try { return localStorage.getItem('blog_token') || ''; } catch (e) { return ''; } }
@@ -120,6 +160,22 @@
         'X-GitHub-Api-Version': '2022-11-28',
         'Content-Type': 'application/json'
       };
+    }
+
+    // Llamada a la API con el token guardado. Si vence, regresa al login.
+    async function gh(ruta, opciones) {
+      const r = await fetch(API + ruta, Object.assign({}, opciones || {}, { headers: cabeceras(leerToken()) }));
+      if (r.status === 401) {
+        salir();
+        throw new Error('Tu sesión venció. Vuelve a entrar con un token nuevo.');
+      }
+      return r;
+    }
+
+    function mensajeHttp(status) {
+      if (status === 403 || status === 404) return 'El token no puede acceder al repositorio. Revisa que tenga el permiso Contents: Read and write.';
+      if (status === 409 || status === 422) return 'La entrada cambió mientras la tenías abierta. Vuelve a abrirla desde Mis entradas.';
+      return 'GitHub respondió con el error ' + status + '.';
     }
 
     /* ---------- Mensajes ---------- */
@@ -137,17 +193,32 @@
       el.append(a, ' ' + despues);
       el.hidden = false;
     }
+    function el(tag, clase, texto) {
+      const e = document.createElement(tag);
+      if (clase) e.className = clase;
+      if (texto !== undefined) e.textContent = texto;
+      return e;
+    }
 
     /* ---------- Vistas ---------- */
-    function irAEditor() {
+    function irAPanel() {
       $('vista-login').hidden = true;
-      $('vista-editor').hidden = false;
+      $('vista-panel').hidden = false;
       $('salir').hidden = false;
+      mostrarSeccion('escribir');
     }
     function irALogin() {
-      $('vista-editor').hidden = true;
+      $('vista-panel').hidden = true;
       $('vista-login').hidden = false;
       $('salir').hidden = true;
+    }
+    function mostrarSeccion(nombre) {
+      const escribir = nombre === 'escribir';
+      $('vista-editor').hidden = !escribir;
+      $('vista-entradas').hidden = escribir;
+      $('tab-escribir').setAttribute('aria-pressed', String(escribir));
+      $('tab-entradas').setAttribute('aria-pressed', String(!escribir));
+      if (!escribir) cargarLista();
     }
 
     async function entrar() {
@@ -164,7 +235,7 @@
         guardarToken(token);
         $('token').value = '';
         estado.hidden = true;
-        irAEditor();
+        irAPanel();
       } catch (e) {
         mostrar(estado, e.message || 'No se pudo conectar con GitHub. Revisa tu internet.', 'error');
       } finally {
@@ -174,6 +245,7 @@
 
     function salir() {
       borrarToken();
+      editando = null;
       irALogin();
     }
 
@@ -194,15 +266,104 @@
       bytes.forEach((b) => { bin += String.fromCharCode(b); });
       return btoa(bin);
     }
+    function deBase64(b64) {
+      const bin = atob(b64.replace(/\s/g, ''));
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return new TextDecoder('utf-8').decode(bytes);
+    }
     function desfase(fecha) {
       const o = -fecha.getTimezoneOffset();
       const signo = o >= 0 ? '+' : '-';
       const a = Math.abs(o);
       return signo + pad(Math.floor(a / 60)) + pad(a % 60);
     }
+    // Valor del input datetime-local -> texto para el front matter
+    function fechaTexto(valor) {
+      return valor.slice(0, 10) + ' ' + valor.slice(11, 16) + ':00 ' + desfase(new Date(valor));
+    }
+    // Texto del front matter -> valor del input datetime-local
+    function inputDesdeFecha(f) {
+      const hora = f.length >= 16 ? f.slice(11, 16) : '12:00';
+      return f.slice(0, 10) + 'T' + hora;
+    }
+    function fechaBonita(f) {
+      const m = parseInt(f.slice(5, 7), 10);
+      return parseInt(f.slice(8, 10), 10) + ' de ' + (MESES[m - 1] || '') + ' de ' + f.slice(0, 4);
+    }
+    function urlEntrada(nombre, fecha) {
+      const s = nombre.replace(/^\d{4}-\d{2}-\d{2}-/, '').replace(/\.(md|markdown)$/, '');
+      return SITIO + fecha.slice(0, 4) + '/' + fecha.slice(5, 7) + '/' + fecha.slice(8, 10) + '/' + s + '/';
+    }
 
-    /* ---------- Borrador automático ---------- */
+    /* ---------- Leer y armar entradas ---------- */
+    function quitarComillas(v) {
+      if (v.charAt(0) === '"') { try { return JSON.parse(v); } catch (e) {} }
+      if (v.length > 1 && v.charAt(0) === "'" && v.charAt(v.length - 1) === "'") return v.slice(1, -1).replace(/''/g, "'");
+      return v.replace(/^"|"$/g, '');
+    }
+    function leerTags(v) {
+      v = v.trim();
+      if (v.charAt(0) === '[') {
+        try { const j = JSON.parse(v); if (Array.isArray(j)) return j.map(String); } catch (e) {}
+        v = v.replace(/^\[/, '').replace(/\]$/, '');
+      }
+      return v.split(',').map((t) => t.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+    }
+    function parsear(texto, nombre) {
+      const limpio = texto.replace(/\r\n/g, '\n');
+      const m = limpio.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+      const datos = { titulo: '', mood: '', tags: [], fecha: '', extras: [], cuerpo: limpio };
+      if (m) {
+        datos.cuerpo = m[2];
+        let ultima = '';
+        m[1].split('\n').forEach((l) => {
+          const k = l.match(/^([A-Za-z_][\w-]*):\s*(.*)$/);
+          if (!k) {
+            const item = l.match(/^\s*-\s+(.*)$/);
+            if (item && ultima === 'tags') datos.tags.push(quitarComillas(item[1].trim()));
+            else if (l.trim()) datos.extras.push(l);
+            return;
+          }
+          ultima = k[1];
+          const valor = k[2].trim();
+          if (k[1] === 'title') datos.titulo = quitarComillas(valor);
+          else if (k[1] === 'mood') datos.mood = quitarComillas(valor);
+          else if (k[1] === 'tags') datos.tags = leerTags(valor);
+          else if (k[1] === 'date') datos.fecha = valor;
+          else if (k[1] !== 'layout') datos.extras.push(l);
+        });
+      }
+      datos.cuerpo = datos.cuerpo.replace(/^\n+/, '').replace(/\s+$/, '');
+      if (!datos.fecha) {
+        const f = nombre.match(/^(\d{4})-(\d{2})-(\d{2})-/);
+        if (f) {
+          const base = f[1] + '-' + f[2] + '-' + f[3];
+          datos.fecha = base + ' 12:00:00 ' + desfase(new Date(base + 'T12:00'));
+        }
+      }
+      return datos;
+    }
+    function armarContenido(d) {
+      let fm = '---\n' +
+        'layout: post\n' +
+        'title: ' + JSON.stringify(d.titulo) + '\n' +
+        'date: ' + d.fecha + '\n' +
+        'mood: ' + JSON.stringify(d.mood) + '\n' +
+        'tags: ' + JSON.stringify(d.etiquetas) + '\n';
+      (d.extras || []).forEach((l) => { fm += l + '\n'; });
+      return fm + '---\n' + d.texto + '\n';
+    }
+    async function leerArchivo(path) {
+      const r = await gh('/contents/' + path + '?ref=' + BRANCH, { cache: 'no-store' });
+      if (!r.ok) throw new Error(mensajeHttp(r.status));
+      const d = await r.json();
+      return { sha: d.sha, texto: deBase64(d.content || '') };
+    }
+
+    /* ---------- Borrador automático (solo entradas nuevas) ---------- */
     function guardarBorrador() {
+      if (editando) return;
       try {
         localStorage.setItem('blog_borrador', JSON.stringify({
           titulo: $('titulo').value, texto: $('texto').value,
@@ -246,7 +407,50 @@
       elegirMood(moodActual);
     }
 
-    /* ---------- Publicar ---------- */
+    /* ---------- Editor ---------- */
+    function limpiarEditor() {
+      $('titulo').value = '';
+      $('texto').value = '';
+      $('etiquetas').value = '';
+      $('fecha').value = ahoraLocal();
+      elegirMood('🙂');
+    }
+    function modoEditor() {
+      const e = !!editando;
+      $('titulo-editor').textContent = e ? 'Editando entrada' : 'Nueva entrada';
+      $('publicar').textContent = e ? 'Guardar cambios' : 'Publicar';
+      $('cancelar-edicion').hidden = !e;
+      $('aviso-edicion').hidden = !e;
+    }
+    function cancelarEdicion() {
+      editando = null;
+      limpiarEditor();
+      cargarBorrador();
+      modoEditor();
+      $('estado-editor').hidden = true;
+    }
+
+    async function editar(path) {
+      const estado = $('estado-editor');
+      mostrarSeccion('escribir');
+      mostrar(estado, 'Abriendo la entrada...');
+      try {
+        const a = await leerArchivo(path);
+        const d = parsear(a.texto, path.split('/').pop());
+        editando = { path: path, sha: a.sha, extras: d.extras, fechaLinea: d.fecha, fechaInput: inputDesdeFecha(d.fecha) };
+        $('titulo').value = d.titulo;
+        $('texto').value = d.cuerpo;
+        $('etiquetas').value = d.tags.join(', ');
+        $('fecha').value = editando.fechaInput;
+        elegirMood(d.mood || '🙂');
+        modoEditor();
+        estado.hidden = true;
+        window.scrollTo(0, 0);
+      } catch (e) {
+        mostrar(estado, e.message || 'No se pudo abrir la entrada. Revisa tu internet.', 'error');
+      }
+    }
+
     async function publicar() {
       const estado = $('estado-editor');
       const titulo = $('titulo').value.trim();
@@ -257,60 +461,154 @@
       if (!texto) { mostrar(estado, 'Escribe el texto de la entrada.', 'error'); $('texto').focus(); return; }
       if (!valorFecha) { mostrar(estado, 'Elige la fecha y la hora.', 'error'); $('fecha').focus(); return; }
       const s = slug(titulo);
-      if (!s) { mostrar(estado, 'El título necesita al menos una letra o número.', 'error'); return; }
+      if (!editando && !s) { mostrar(estado, 'El título necesita al menos una letra o número.', 'error'); return; }
 
-      const fecha = new Date(valorFecha);
-      const y = valorFecha.slice(0, 4), m = valorFecha.slice(5, 7), d = valorFecha.slice(8, 10);
-      const hora = valorFecha.slice(11, 16);
       const etiquetas = Array.from(new Set(
         $('etiquetas').value.split(',').map((t) => slug(t.replace(/^#/, ''))).filter(Boolean)
       ));
+      const fechaStr = (editando && valorFecha === editando.fechaInput) ? editando.fechaLinea : fechaTexto(valorFecha);
+      const contenido = armarContenido({
+        titulo: titulo, fecha: fechaStr, mood: moodActual, etiquetas: etiquetas,
+        extras: editando ? editando.extras : [], texto: texto
+      });
 
-      const contenido =
-        '---\n' +
-        'layout: post\n' +
-        'title: ' + JSON.stringify(titulo) + '\n' +
-        'date: ' + y + '-' + m + '-' + d + ' ' + hora + ':00 ' + desfase(fecha) + '\n' +
-        'mood: ' + JSON.stringify(moodActual) + '\n' +
-        'tags: ' + JSON.stringify(etiquetas) + '\n' +
-        '---\n' + texto + '\n';
+      const path = editando ? editando.path : '_posts/' + valorFecha.slice(0, 10) + '-' + s + '.md';
+      const cuerpo = {
+        message: (editando ? 'Editar entrada: ' : 'Nueva entrada: ') + titulo,
+        content: aBase64(contenido),
+        branch: BRANCH
+      };
+      if (editando) cuerpo.sha = editando.sha;
 
-      const ruta = '_posts/' + y + '-' + m + '-' + d + '-' + s + '.md';
-      const token = leerToken();
       $('publicar').disabled = true;
-      mostrar(estado, 'Publicando...');
-
+      mostrar(estado, editando ? 'Guardando cambios...' : 'Publicando...');
       try {
-        const r = await fetch(API + '/contents/' + ruta, {
-          method: 'PUT',
-          headers: cabeceras(token),
-          body: JSON.stringify({
-            message: 'Nueva entrada: ' + titulo,
-            content: aBase64(contenido),
-            branch: BRANCH
-          })
-        });
-        if (r.status === 401) { salir(); throw new Error('Tu sesión venció. Vuelve a entrar con un token nuevo.'); }
-        if (r.status === 403 || r.status === 404) throw new Error('El token no puede escribir en el repositorio. Revisa que tenga el permiso Contents: Read and write.');
-        if (r.status === 422) throw new Error('Ya existe una entrada con ese título en ese día. Cambia el título o la fecha.');
-        if (!r.ok) throw new Error('GitHub respondió con el error ' + r.status + '.');
+        const r = await gh('/contents/' + path, { method: 'PUT', body: JSON.stringify(cuerpo) });
+        if (!editando && r.status === 422) throw new Error('Ya existe una entrada con ese título en ese día. Cambia el título o la fecha.');
+        if (!r.ok) throw new Error(mensajeHttp(r.status));
+        const datos = await r.json().catch(() => ({}));
+        const url = urlEntrada(path.split('/').pop(), fechaStr);
 
-        const url = 'https://' + OWNER + '.github.io/' + REPO + '/' + y + '/' + m + '/' + d + '/' + s + '/';
-        mostrarEnlace(estado, 'Publicado.', url, '(el sitio tarda 1 o 2 minutos en actualizarse).');
-        borrarBorrador();
-        $('titulo').value = '';
-        $('texto').value = '';
-        $('etiquetas').value = '';
-        $('fecha').value = ahoraLocal();
-        elegirMood('🙂');
-      } catch (e) {
-        if ($('vista-login').hidden) {
-          mostrar(estado, e.message || 'No se pudo conectar con GitHub. Revisa tu internet.', 'error');
+        if (editando) {
+          if (datos.content && datos.content.sha) editando.sha = datos.content.sha;
+          editando.fechaLinea = fechaStr;
+          editando.fechaInput = valorFecha;
+          mostrarEnlace(estado, 'Cambios guardados.', url, '(el sitio tarda 1 o 2 minutos en actualizarse).');
         } else {
-          mostrar($('estado-login'), e.message, 'error');
+          mostrarEnlace(estado, 'Publicado.', url, '(el sitio tarda 1 o 2 minutos en actualizarse).');
+          borrarBorrador();
+          limpiarEditor();
         }
+      } catch (e) {
+        mostrar(estado, e.message || 'No se pudo conectar con GitHub. Revisa tu internet.', 'error');
       } finally {
         $('publicar').disabled = false;
+      }
+    }
+
+    /* ---------- Mis entradas ---------- */
+    function tituloDesdeNombre(nombre) {
+      const t = nombre.replace(/^\d{4}-\d{2}-\d{2}-/, '').replace(/\.(md|markdown)$/, '').replace(/-/g, ' ');
+      return t.charAt(0).toUpperCase() + t.slice(1);
+    }
+    function fechaDesdeNombre(nombre) {
+      const f = nombre.match(/^(\d{4}-\d{2}-\d{2})-/);
+      return f ? f[1] : '';
+    }
+
+    function crearItem(archivo) {
+      const li = el('li', 'item');
+      const burbuja = el('span', 'mood-burbuja', '📖');
+      burbuja.setAttribute('aria-hidden', 'true');
+      const cuerpo = el('div', 'item-cuerpo');
+      const titulo = el('strong', 'item-titulo', tituloDesdeNombre(archivo.name));
+      const meta = el('span', 'item-meta', fechaDesdeNombre(archivo.name));
+      cuerpo.append(titulo, meta);
+
+      const acciones = el('div', 'acciones');
+      const bEditar = el('button', 'btn btn-suave', 'Editar');
+      bEditar.type = 'button';
+      bEditar.addEventListener('click', () => editar(archivo.path));
+      const bVer = el('a', 'btn btn-suave', 'Ver');
+      bVer.href = urlEntrada(archivo.name, fechaDesdeNombre(archivo.name));
+      bVer.target = '_blank';
+      bVer.rel = 'noopener';
+      const bBorrar = el('button', 'btn btn-suave btn-peligro', 'Borrar');
+      bBorrar.type = 'button';
+      bBorrar.addEventListener('click', () => borrar(archivo.path, titulo.textContent, li));
+      acciones.append(bEditar, bVer, bBorrar);
+
+      li.append(burbuja, cuerpo, acciones);
+      li._partes = { burbuja: burbuja, titulo: titulo, meta: meta, ver: bVer };
+      itemsPorRuta.set(archivo.path, li);
+      return li;
+    }
+
+    function rellenarItem(archivo, texto) {
+      const li = itemsPorRuta.get(archivo.path);
+      if (!li) return;
+      const d = parsear(texto, archivo.name);
+      const p = li._partes;
+      if (d.titulo) p.titulo.textContent = d.titulo;
+      p.burbuja.textContent = d.mood || '📖';
+      let meta = d.fecha ? fechaBonita(d.fecha) : p.meta.textContent;
+      if (d.tags.length) meta += '  ' + d.tags.map((t) => '#' + t).join(' ');
+      p.meta.textContent = meta;
+      if (d.fecha) p.ver.href = urlEntrada(archivo.name, d.fecha);
+    }
+
+    async function cargarLista() {
+      const estado = $('estado-lista');
+      const ul = $('lista-entradas');
+      ul.textContent = '';
+      itemsPorRuta.clear();
+      mostrar(estado, 'Cargando tus entradas...');
+      try {
+        const r = await gh('/contents/_posts?ref=' + BRANCH, { cache: 'no-store' });
+        if (r.status === 404) { mostrar(estado, 'Todavía no hay entradas. Escribe la primera.'); return; }
+        if (!r.ok) throw new Error(mensajeHttp(r.status));
+        const archivos = (await r.json())
+          .filter((a) => a.type === 'file' && /\.(md|markdown)$/.test(a.name))
+          .sort((a, b) => b.name.localeCompare(a.name));
+        if (!archivos.length) { mostrar(estado, 'Todavía no hay entradas. Escribe la primera.'); return; }
+        estado.hidden = true;
+        archivos.forEach((a) => ul.append(crearItem(a)));
+
+        // Completa título, mood y etiquetas leyendo cada archivo (4 a la vez)
+        const cola = archivos.slice();
+        const trabajadores = [1, 2, 3, 4].map(async () => {
+          while (cola.length) {
+            const a = cola.shift();
+            try {
+              const x = await leerArchivo(a.path);
+              rellenarItem(a, x.texto);
+            } catch (e) { /* se queda con el nombre del archivo */ }
+          }
+        });
+        await Promise.all(trabajadores);
+      } catch (e) {
+        mostrar(estado, e.message || 'No se pudo cargar la lista. Revisa tu internet.', 'error');
+      }
+    }
+
+    async function borrar(path, titulo, li) {
+      if (!confirm('¿Seguro que quieres borrar «' + titulo + '»? Esto no se puede deshacer.')) return;
+      const estado = $('estado-lista');
+      mostrar(estado, 'Borrando...');
+      try {
+        const a = await leerArchivo(path);
+        const r = await gh('/contents/' + path, {
+          method: 'DELETE',
+          body: JSON.stringify({ message: 'Borrar entrada: ' + titulo, sha: a.sha, branch: BRANCH })
+        });
+        if (!r.ok) throw new Error(mensajeHttp(r.status));
+        li.remove();
+        itemsPorRuta.delete(path);
+        if (editando && editando.path === path) { editando = null; limpiarEditor(); modoEditor(); }
+        if ($('lista-entradas').children.length) mostrar(estado, 'Entrada borrada. El sitio tarda 1 o 2 minutos en actualizarse.', 'ok');
+        else mostrar(estado, 'Entrada borrada. Ya no quedan entradas.', 'ok');
+      } catch (e) {
+        mostrar(estado, e.message || 'No se pudo borrar. Revisa tu internet.', 'error');
       }
     }
 
@@ -318,13 +616,17 @@
     pintarMoods();
     $('fecha').value = ahoraLocal();
     cargarBorrador();
+    modoEditor();
     ['titulo', 'texto', 'etiquetas'].forEach((id) => $(id).addEventListener('input', guardarBorrador));
     $('entrar').addEventListener('click', entrar);
     $('token').addEventListener('keydown', (e) => { if (e.key === 'Enter') entrar(); });
     $('publicar').addEventListener('click', publicar);
+    $('cancelar-edicion').addEventListener('click', cancelarEdicion);
     $('salir').addEventListener('click', salir);
+    $('tab-escribir').addEventListener('click', () => mostrarSeccion('escribir'));
+    $('tab-entradas').addEventListener('click', () => mostrarSeccion('entradas'));
 
-    if (leerToken()) irAEditor(); else irALogin();
+    if (leerToken()) irAPanel(); else irALogin();
   </script>
 </body>
 </html>
