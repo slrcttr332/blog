@@ -1,10 +1,42 @@
 {
   "titulo": "Sobre mí",
-  "intro": "Soy Carlos, vivo en Chiapas y este es mi rincón para contar mi día. Aquí te dejo un poco de lo que me gusta.\nPuedo cambiar este texto cuando quiera desde mi panel.",
+  "intro": "¡Hola! Soy Carlos, vivo en Chiapas y este es mi rincón digital para contar un poco de mi día a día, el álbum digital perfecto para venir siempre y recordar buenos momentos. \n\nEntre la universidad, videojuegos y momentos con la gente que adoro, aquí te comparto un pedacito de lo que soy y lo que vivo. \n\nY chachauu :D",
   "bloques": [
-    { "emoji": "📺", "titulo": "Caricaturas que amo", "items": ["Pocoyo", "Bubble Guppies"] },
-    { "emoji": "🪄", "titulo": "Mi top de siempre", "items": ["Harry Potter", "Miraculous", "Marvel"] },
-    { "emoji": "👻", "titulo": "Mi lado spooky", "items": ["Chucky"] },
-    { "emoji": "🎤", "titulo": "Mis cantantes favoritos", "items": [] }
+    {
+      "emoji": "📺",
+      "titulo": "Mi día a día",
+      "items": [
+        "Brawl Stars",
+        "Roblox",
+        "MCOC"
+      ]
+    },
+    {
+      "emoji": "🪄",
+      "titulo": "Mi top de siempre",
+      "items": [
+        "Harry Potter",
+        "Miraculous",
+        "Marvel"
+      ]
+    },
+    {
+      "emoji": "🎤",
+      "titulo": "Mi Spotify Wrapped",
+      "items": [
+        "Olivia Rodrigo",
+        "Conan Gray",
+        "Chappel Roan"
+      ]
+    },
+    {
+      "emoji": "🧸",
+      "titulo": "Mis regalos fav",
+      "items": [
+        "Peluches",
+        "Comida",
+        "Dinero"
+      ]
+    }
   ]
 }
