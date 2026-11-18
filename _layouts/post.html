@@ -9,6 +9,9 @@ layout: default
       <p class="meta">
         <time datetime="{{ page.date | date_to_xmlschema }}">{% include fecha.html fecha=page.date %}</time>
       </p>
+      {% if page.calificacion and page.calificacion > 0 %}
+      <p class="calificacion"><span>Mi día:</span> {% include estrellas.html n=page.calificacion %}</p>
+      {% endif %}
       {% if page.tags.size > 0 %}
       <p class="etiquetas">
         {% for tag in page.tags %}<a class="etiqueta" href="{{ '/' | relative_url }}#{{ tag | slugify }}">#{{ tag }}</a>{% endfor %}

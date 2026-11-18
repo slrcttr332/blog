@@ -35,7 +35,10 @@ layout: default
   <li class="tarjeta" data-tags="{% for tag in post.tags %}{{ tag | slugify }} {% endfor %}" data-texto="{{ post.title | escape }} {{ post.excerpt | strip_html | strip_newlines | escape }} {{ post.tags | join: ' ' | escape }}">
     <div class="tarjeta-top">
       <span class="mood-burbuja" aria-hidden="true">{% if post.mood %}{{ post.mood }}{% else %}📖{% endif %}</span>
-      <time datetime="{{ post.date | date_to_xmlschema }}">{% include fecha.html fecha=post.date %}</time>
+      <div class="tarjeta-datos">
+        <time datetime="{{ post.date | date_to_xmlschema }}">{% include fecha.html fecha=post.date %}</time>
+        {% if post.calificacion and post.calificacion > 0 %}{% include estrellas.html n=post.calificacion %}{% endif %}
+      </div>
     </div>
     {% if post.portada %}<img class="tarjeta-foto" src="{{ post.portada | relative_url }}" alt="{{ post.portada_alt | escape }}" loading="lazy">{% endif %}
     <div class="tarjeta-cuerpo">

@@ -81,6 +81,13 @@
     .foto-mini { width: 5.5rem; height: 5.5rem; flex: none; object-fit: cover; border: 2.5px solid var(--tinta); border-radius: 12px; background: var(--fondo); }
     .foto-info { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
     #estado-fotos { margin-top: 1rem; }
+    .estrellas-ed { display: flex; flex-wrap: wrap; gap: 0.2rem; }
+    .estrella-btn {
+      min-width: 2.9rem; min-height: 2.9rem; font-size: 2.2rem; line-height: 1; padding: 0; cursor: pointer;
+      background: transparent; border: 0; color: #ffffff; -webkit-text-stroke: 2px var(--tinta);
+    }
+    .estrella-btn.llena { color: var(--amarillo); }
+    .estrella-btn:focus-visible { outline: 4px solid var(--enlace); outline-offset: 2px; border-radius: 10px; }
   </style>
 </head>
 <body>
@@ -123,6 +130,12 @@
         <fieldset class="campo">
           <legend>¿Cómo te fue?</legend>
           <div class="moods" id="moods"></div>
+        </fieldset>
+
+        <fieldset class="campo">
+          <legend>¿Qué tan bueno fue tu día? (opcional)</legend>
+          <div class="estrellas-ed" id="estrellas-ed"></div>
+          <p class="ayuda" id="calif-texto">Sin calificar. Toca la misma estrella otra vez para quitarla.</p>
         </fieldset>
 
         <div class="campo">
@@ -208,6 +221,7 @@
     let moodActual = '🙂';
     let editando = null; // { path, sha, extras, fechaLinea, fechaInput }
     let portadaActual = null; // { ruta, alt }
+    let calificacionActual = 0; // 0 = sin calificar
     const fotosSesion = []; // { ruta, objUrl }
     const itemsPorRuta = new Map();
     const RUTA_SOBRE = '_data/sobre_mi.json';
@@ -381,7 +395,7 @@
     function parsear(texto, nombre) {
       const limpio = texto.replace(/\r\n/g, '\n');
       const m = limpio.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
-      const datos = { titulo: '', mood: '', tags: [], fecha: '', portada: '', portadaAlt: '', extras: [], cuerpo: limpio };
+      const datos = { titulo: '', mood: '', tags: [], fecha: '', portada: '', portadaAlt: '', calificacion: 0, extras: [], cuerpo: limpio };
       if (m) {
         datos.cuerpo = m[2];
         let ultima = '';
@@ -399,6 +413,7 @@
           else if (k[1] === 'mood') datos.mood = quitarComillas(valor);
           else if (k[1] === 'tags') datos.tags = leerTags(valor);
           else if (k[1] === 'date') datos.fecha = valor;
+          else if (k[1] === 'calificacion') datos.calificacion = Math.min(5, Math.max(0, parseInt(quitarComillas(valor), 10) || 0));
           else if (k[1] === 'portada') datos.portada = quitarComillas(valor);
           else if (k[1] === 'portada_alt') datos.portadaAlt = quitarComillas(valor);
           else if (k[1] !== 'layout') datos.extras.push(l);
@@ -421,6 +436,7 @@
         'date: ' + d.fecha + '\n' +
         'mood: ' + JSON.stringify(d.mood) + '\n' +
         'tags: ' + JSON.stringify(d.etiquetas) + '\n';
+      if (d.calificacion) fm += 'calificacion: ' + d.calificacion + '\n';
       if (d.portada) {
         fm += 'portada: ' + JSON.stringify(d.portada) + '\n';
         if (d.portadaAlt) fm += 'portada_alt: ' + JSON.stringify(d.portadaAlt) + '\n';
@@ -441,7 +457,7 @@
       try {
         localStorage.setItem('blog_borrador', JSON.stringify({
           titulo: $('titulo').value, texto: $('texto').value,
-          etiquetas: $('etiquetas').value, mood: moodActual, portada: portadaActual
+          etiquetas: $('etiquetas').value, mood: moodActual, portada: portadaActual, calificacion: calificacionActual
         }));
       } catch (e) {}
     }
@@ -455,6 +471,7 @@
         if (b.mood) elegirMood(b.mood);
         portadaActual = b.portada || null;
         pintarFotos();
+        elegirCalificacion(b.calificacion || 0);
       } catch (e) {}
     }
     function borrarBorrador() { try { localStorage.removeItem('blog_borrador'); } catch (e) {} }
@@ -494,6 +511,7 @@
       fotosSesion.length = 0;
       $('estado-fotos').hidden = true;
       pintarFotos();
+      elegirCalificacion(0);
     }
     function modoEditor() {
       const e = !!editando;
@@ -526,6 +544,7 @@
         portadaActual = d.portada ? { ruta: d.portada, alt: d.portadaAlt || '' } : null;
         fotosSesion.length = 0;
         pintarFotos();
+        elegirCalificacion(d.calificacion);
         modoEditor();
         estado.hidden = true;
         window.scrollTo(0, 0);
@@ -552,6 +571,7 @@
       const fechaStr = (editando && valorFecha === editando.fechaInput) ? editando.fechaLinea : fechaTexto(valorFecha);
       const contenido = armarContenido({
         titulo: titulo, fecha: fechaStr, mood: moodActual, etiquetas: etiquetas,
+        calificacion: calificacionActual,
         portada: portadaActual ? portadaActual.ruta : '', portadaAlt: portadaActual ? portadaActual.alt : '',
         extras: editando ? editando.extras : [], texto: texto
       });
@@ -636,6 +656,7 @@
       if (d.titulo) p.titulo.textContent = d.titulo;
       p.burbuja.textContent = d.mood || '📖';
       let meta = d.fecha ? fechaBonita(d.fecha) : p.meta.textContent;
+      if (d.calificacion) meta += '  ⭐ ' + d.calificacion + '/5';
       if (d.tags.length) meta += '  ' + d.tags.map((t) => '#' + t).join(' ');
       p.meta.textContent = meta;
       if (d.fecha) p.ver.href = urlEntrada(archivo.name, d.fecha);
@@ -933,8 +954,37 @@
       });
     }
 
+    /* ---------- Calificación ---------- */
+    function elegirCalificacion(n) {
+      calificacionActual = n;
+      document.querySelectorAll('.estrella-btn').forEach((b) => {
+        const i = parseInt(b.dataset.n, 10);
+        b.classList.toggle('llena', i <= n);
+        b.setAttribute('aria-pressed', String(i === n));
+      });
+      $('calif-texto').textContent = n
+        ? 'Tu día: ' + n + ' de 5. Toca la misma estrella otra vez para quitarla.'
+        : 'Sin calificar. Toca la misma estrella otra vez para quitarla.';
+    }
+    function pintarEstrellas() {
+      const cont = $('estrellas-ed');
+      for (let i = 1; i <= 5; i++) {
+        const b = el('button', 'estrella-btn', '★');
+        b.type = 'button';
+        b.dataset.n = String(i);
+        b.setAttribute('aria-label', i + (i === 1 ? ' estrella' : ' estrellas'));
+        b.setAttribute('aria-pressed', 'false');
+        b.addEventListener('click', () => {
+          elegirCalificacion(calificacionActual === i ? 0 : i);
+          guardarBorrador();
+        });
+        cont.append(b);
+      }
+    }
+
     /* ---------- Inicio ---------- */
     pintarMoods();
+    pintarEstrellas();
     $('fecha').value = ahoraLocal();
     cargarBorrador();
     modoEditor();

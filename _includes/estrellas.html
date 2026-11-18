@@ -1,0 +1,2 @@
+{%- assign n = include.n | plus: 0 -%}
+<span class="estrellas" role="img" aria-label="Calificación: {{ n }} de 5">{% for i in (1..5) %}<span class="estrella{% if i <= n %} on{% endif %}" aria-hidden="true">★</span>{% endfor %}</span>
