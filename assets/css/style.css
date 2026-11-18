@@ -213,6 +213,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   margin: 1.5rem 0; padding: 0.75rem 1.25rem; background: #eef9ff;
   border-left: 6px solid var(--azul); border-radius: 0 14px 14px 0;
 }
+.texto blockquote p:last-child { margin-bottom: 0; }
 .texto code { font-size: 0.9em; background: var(--acento-fondo); padding: 0.1em 0.4em; border-radius: 6px; }
 .volver { margin: 2rem 0 0; }
 .btn-enlace {

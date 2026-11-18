@@ -88,6 +88,19 @@
     }
     .estrella-btn.llena { color: var(--amarillo); }
     .estrella-btn:focus-visible { outline: 4px solid var(--enlace); outline-offset: 2px; border-radius: 10px; }
+    .vista-previa { margin: 0 0 1.4rem; }
+    .vista-previa-etq { font-family: var(--fuente-titulo); font-weight: 700; font-size: 1.15rem; margin: 0 0 0.6rem; }
+    .vista-previa .post-hoja { box-shadow: var(--sombra); }
+    .vista-previa .texto { font-size: 1.05rem; }
+    @media (min-width: 64rem) {
+      body.modo-ancho .cabecera, body.modo-ancho .contenido, body.modo-ancho .pie { width: min(100% - 2rem, 76rem); }
+      #vista-editor { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 2rem; align-items: start; }
+      #vista-editor > * { grid-column: 1; }
+      #vista-editor > .vista-previa {
+        grid-column: 2; grid-row: 1 / span 40; align-self: start; position: sticky; top: 1rem;
+        max-height: calc(100vh - 2rem); overflow: auto; margin: 0; padding: 0.25rem 0.5rem 1rem 0.25rem;
+      }
+    }
   </style>
 </head>
 <body>
@@ -154,6 +167,12 @@
           <textarea id="texto"></textarea>
           <p class="ayuda">Puedes usar Markdown: **negritas**, *cursiva*, listas con guiones y &gt; para citas.</p>
         </div>
+
+        <aside class="vista-previa" aria-label="Vista previa de la entrada">
+          <p class="vista-previa-etq">👀 Vista previa: así se verá tu entrada</p>
+          <div id="vista-contenido"></div>
+          <p class="ayuda">Es una aproximación. Las listas dentro de listas y el HTML no se muestran igual.</p>
+        </aside>
 
         <fieldset class="campo fotos">
           <legend>Fotos</legend>
@@ -288,6 +307,7 @@
       mostrarSeccion('escribir');
     }
     function irALogin() {
+      document.body.classList.remove('modo-ancho');
       $('vista-panel').hidden = true;
       $('vista-login').hidden = false;
       $('salir').hidden = true;
@@ -298,6 +318,8 @@
       $('tab-escribir').setAttribute('aria-pressed', String(nombre === 'escribir'));
       $('tab-entradas').setAttribute('aria-pressed', String(nombre === 'entradas'));
       $('tab-sobre').setAttribute('aria-pressed', String(nombre === 'sobre'));
+      document.body.classList.toggle('modo-ancho', nombre === 'escribir');
+      if (nombre === 'escribir') programarVista();
       if (nombre === 'entradas') cargarLista();
       if (nombre === 'sobre' && !sobreCargado) cargarSobre();
     }
@@ -479,6 +501,7 @@
     /* ---------- Mood ---------- */
     function elegirMood(emoji) {
       moodActual = emoji;
+      programarVista();
       document.querySelectorAll('.mood-op').forEach((b) => {
         b.setAttribute('aria-pressed', String(b.dataset.emoji === emoji));
       });
@@ -917,6 +940,7 @@
     }
 
     function pintarFotos() {
+      programarVista();
       const pc = $('portada-actual');
       pc.textContent = '';
       if (portadaActual) {
@@ -957,6 +981,7 @@
     /* ---------- Calificación ---------- */
     function elegirCalificacion(n) {
       calificacionActual = n;
+      programarVista();
       document.querySelectorAll('.estrella-btn').forEach((b) => {
         const i = parseInt(b.dataset.n, 10);
         b.classList.toggle('llena', i <= n);
@@ -982,6 +1007,148 @@
       }
     }
 
+    /* ---------- Vista previa en vivo ---------- */
+    function esc(t) {
+      return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function urlSegura(u) {
+      u = u.trim();
+      return /^(https?:\/\/|mailto:|\/|#|blob:)/i.test(u) ? u : '';
+    }
+    function resolverImg(u) {
+      const f = fotosSesion.find((x) => BASE + x.ruta === u);
+      return f ? f.objUrl : u;
+    }
+    // Recibe texto ya escapado
+    function inl(t) {
+      const guardados = [];
+      const guardar = (h) => { guardados.push(h); return '\u0000' + (guardados.length - 1) + '\u0000'; };
+      t = t.replace(/`([^`]+)`/g, (m, c) => guardar('<code>' + c + '</code>'));
+      t = t.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (m, alt, src) => {
+        const u = urlSegura(src.replace(/&amp;/g, '&'));
+        return u ? guardar('<img src="' + esc(resolverImg(u)) + '" alt="' + alt + '">') : m;
+      });
+      t = t.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (m, txt, href) => {
+        const u = urlSegura(href.replace(/&amp;/g, '&'));
+        return u ? guardar('<a href="' + esc(u) + '" target="_blank" rel="noopener">' + inl(txt) + '</a>') : m;
+      });
+      t = t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      t = t.replace(/__(.+?)__/g, '<strong>$1</strong>');
+      t = t.replace(/~~(.+?)~~/g, '<del>$1</del>');
+      t = t.replace(/\*([^*\s][^*]*?)\*/g, '<em>$1</em>');
+      t = t.replace(/(^|[\s(])_([^_\s][^_]*?)_(?=[\s).,!?:;]|$)/g, '$1<em>$2</em>');
+      return t.replace(/\u0000(\d+)\u0000/g, (m, i) => guardados[i]);
+    }
+    function inline(t) { return inl(esc(t)); }
+
+    function esInicioDeBloque(l) {
+      return /^\s*```/.test(l) || /^#{1,6}\s+/.test(l) || /^\s*>/.test(l) ||
+        /^\s*[-*+]\s+/.test(l) || /^\s*\d+[.)]\s+/.test(l) || /^\s*([-*_])(\s*\1){2,}\s*$/.test(l);
+    }
+    function renderMarkdown(src) {
+      const lineas = src.replace(/\r\n/g, '\n').split('\n');
+      const out = [];
+      let i = 0;
+      while (i < lineas.length) {
+        const l = lineas[i];
+        if (!l.trim()) { i++; continue; }
+        if (/^\s*```/.test(l)) {
+          const codigo = [];
+          i++;
+          while (i < lineas.length && !/^\s*```/.test(lineas[i])) { codigo.push(lineas[i]); i++; }
+          i++;
+          out.push('<pre><code>' + esc(codigo.join('\n')) + '</code></pre>');
+          continue;
+        }
+        const h = l.match(/^(#{1,6})\s+(.*)$/);
+        if (h) {
+          const n = h[1].length;
+          out.push('<h' + n + '>' + inline(h[2].replace(/\s+#+\s*$/, '')) + '</h' + n + '>');
+          i++;
+          continue;
+        }
+        if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(l)) { out.push('<hr>'); i++; continue; }
+        if (/^\s*>/.test(l)) {
+          const q = [];
+          while (i < lineas.length && /^\s*>/.test(lineas[i])) { q.push(lineas[i].replace(/^\s*>\s?/, '')); i++; }
+          out.push('<blockquote>' + renderMarkdown(q.join('\n')) + '</blockquote>');
+          continue;
+        }
+        if (/^\s*[-*+]\s+/.test(l)) {
+          const items = [];
+          while (i < lineas.length && /^\s*[-*+]\s+/.test(lineas[i])) { items.push('<li>' + inline(lineas[i].replace(/^\s*[-*+]\s+/, '')) + '</li>'); i++; }
+          out.push('<ul>' + items.join('') + '</ul>');
+          continue;
+        }
+        if (/^\s*\d+[.)]\s+/.test(l)) {
+          const items = [];
+          while (i < lineas.length && /^\s*\d+[.)]\s+/.test(lineas[i])) { items.push('<li>' + inline(lineas[i].replace(/^\s*\d+[.)]\s+/, '')) + '</li>'); i++; }
+          out.push('<ol>' + items.join('') + '</ol>');
+          continue;
+        }
+        const parrafo = [];
+        while (i < lineas.length && lineas[i].trim() && (parrafo.length === 0 || !esInicioDeBloque(lineas[i]))) {
+          parrafo.push(lineas[i].trim());
+          i++;
+        }
+        out.push('<p>' + inline(parrafo.join(' ')) + '</p>');
+      }
+      return out.join('\n');
+    }
+
+    function estrellasVista(n) {
+      const cont = el('span', 'estrellas');
+      cont.setAttribute('role', 'img');
+      cont.setAttribute('aria-label', 'Calificación: ' + n + ' de 5');
+      for (let i = 1; i <= 5; i++) {
+        const e = el('span', 'estrella' + (i <= n ? ' on' : ''), '★');
+        e.setAttribute('aria-hidden', 'true');
+        cont.append(e);
+      }
+      return cont;
+    }
+
+    function actualizarVista() {
+      const caja = $('vista-contenido');
+      if (!caja) return;
+      caja.textContent = '';
+      const hoja = el('div', 'post-hoja');
+      const cab = el('header', 'post-cabecera');
+      const mood = el('div', 'mood', moodActual);
+      mood.setAttribute('aria-hidden', 'true');
+      cab.append(mood);
+      cab.append(el('h1', '', $('titulo').value.trim() || 'Aquí va tu título'));
+      cab.append(el('p', 'meta', $('fecha').value ? fechaBonita($('fecha').value) : ''));
+      if (calificacionActual) {
+        const c = el('p', 'calificacion');
+        c.append(el('span', '', 'Mi día:'), ' ', estrellasVista(calificacionActual));
+        cab.append(c);
+      }
+      const tags = Array.from(new Set($('etiquetas').value.split(',').map((t) => slug(t.replace(/^#/, ''))).filter(Boolean)));
+      if (tags.length) {
+        const p = el('p', 'etiquetas');
+        tags.forEach((t) => p.append(el('span', 'etiqueta', '#' + t)));
+        cab.append(p);
+      }
+      hoja.append(cab);
+      if (portadaActual) {
+        const img = el('img', 'post-portada');
+        img.src = vistaFoto(portadaActual.ruta);
+        img.alt = portadaActual.alt || '';
+        hoja.append(img);
+      }
+      const texto = el('div', 'texto');
+      const html = renderMarkdown($('texto').value);
+      texto.innerHTML = html || '<p class="ayuda">Empieza a escribir y verás aquí cómo queda.</p>';
+      hoja.append(texto);
+      caja.append(hoja);
+    }
+    let vistaPendiente = null;
+    function programarVista() {
+      if (vistaPendiente) clearTimeout(vistaPendiente);
+      vistaPendiente = setTimeout(() => { vistaPendiente = null; actualizarVista(); }, 120);
+    }
+
     /* ---------- Inicio ---------- */
     pintarMoods();
     pintarEstrellas();
@@ -989,6 +1156,10 @@
     cargarBorrador();
     modoEditor();
     ['titulo', 'texto', 'etiquetas'].forEach((id) => $(id).addEventListener('input', guardarBorrador));
+    ['titulo', 'texto', 'etiquetas', 'fecha'].forEach((id) => {
+      $(id).addEventListener('input', programarVista);
+      $(id).addEventListener('change', programarVista);
+    });
     $('entrar').addEventListener('click', entrar);
     $('token').addEventListener('keydown', (e) => { if (e.key === 'Enter') entrar(); });
     $('publicar').addEventListener('click', publicar);
