@@ -15,6 +15,7 @@ layout: default
       </p>
       {% endif %}
     </header>
+    {% if page.portada %}<img class="post-portada" src="{{ page.portada | relative_url }}" alt="{{ page.portada_alt | escape }}">{% endif %}
     <div class="texto">
       {{ content }}
     </div>

@@ -68,6 +68,19 @@
     textarea.in-items { min-height: 7rem; box-shadow: none; }
     .bloque-botones { display: flex; flex-wrap: wrap; gap: 0.5rem; }
     #sobre-bloques + .acciones-editor { margin-top: 0.5rem; }
+    fieldset.fotos { border: var(--grosor) dashed var(--tinta); border-radius: 18px; padding: 1rem 1.1rem 1.2rem; }
+    fieldset.fotos legend { padding: 0 0.5rem; }
+    .campo-chico { margin: 0 0 0.9rem; }
+    .campo-chico label { display: block; font-weight: 700; margin-bottom: 0.3rem; }
+    .portada-actual, .foto-item {
+      display: flex; gap: 0.9rem; align-items: center; margin-top: 1rem; padding: 0.7rem;
+      background: var(--papel); border: var(--grosor) solid var(--tinta); border-radius: 16px;
+    }
+    .fotos-lista { list-style: none; margin: 0; padding: 0; }
+    .portada-actual[hidden] { display: none; }
+    .foto-mini { width: 5.5rem; height: 5.5rem; flex: none; object-fit: cover; border: 2.5px solid var(--tinta); border-radius: 12px; background: var(--fondo); }
+    .foto-info { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+    #estado-fotos { margin-top: 1rem; }
   </style>
 </head>
 <body>
@@ -129,6 +142,23 @@
           <p class="ayuda">Puedes usar Markdown: **negritas**, *cursiva*, listas con guiones y &gt; para citas.</p>
         </div>
 
+        <fieldset class="campo fotos">
+          <legend>Fotos</legend>
+          <p class="ayuda">Sube una foto y elige si va de portada o dentro del texto. Se achican solas para que tu blog cargue rápido y se les borra la ubicación. Ojo: las fotos son públicas.</p>
+          <div class="campo-chico">
+            <label for="foto-alt">Descripción de la foto (opcional)</label>
+            <input type="text" id="foto-alt" maxlength="140" autocomplete="off" placeholder="Ej. Mi perrita en el parque">
+            <p class="ayuda">Una frase corta de lo que se ve. Ayuda a quien no puede ver la imagen.</p>
+          </div>
+          <div class="acciones-editor">
+            <button type="button" id="foto-btn" class="btn btn-suave">📷 Agregar foto</button>
+          </div>
+          <input type="file" id="foto-archivo" accept="image/*" multiple class="solo-lectores" tabindex="-1">
+          <div id="portada-actual" class="portada-actual" hidden></div>
+          <ul id="fotos-lista" class="fotos-lista"></ul>
+          <p id="estado-fotos" class="estado" role="status" aria-live="polite" hidden></p>
+        </fieldset>
+
         <div class="acciones-editor">
           <button type="button" id="publicar" class="btn">Publicar</button>
           <button type="button" id="cancelar-edicion" class="btn btn-suave" hidden>Cancelar edición</button>
@@ -168,6 +198,7 @@
     const BRANCH = 'main';
     const API = 'https://api.github.com/repos/' + OWNER + '/' + REPO;
     const SITIO = 'https://' + OWNER + '.github.io/' + REPO + '/';
+    const BASE = '/' + REPO;
     const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
     const MOODS = [
       ['😄', 'Muy bien'], ['🙂', 'Bien'], ['😌', 'Tranquilo'], ['🥳', 'De fiesta'],
@@ -176,6 +207,8 @@
     const $ = (id) => document.getElementById(id);
     let moodActual = '🙂';
     let editando = null; // { path, sha, extras, fechaLinea, fechaInput }
+    let portadaActual = null; // { ruta, alt }
+    const fotosSesion = []; // { ruta, objUrl }
     const itemsPorRuta = new Map();
     const RUTA_SOBRE = '_data/sobre_mi.json';
     let sobreSha = null;
@@ -348,7 +381,7 @@
     function parsear(texto, nombre) {
       const limpio = texto.replace(/\r\n/g, '\n');
       const m = limpio.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
-      const datos = { titulo: '', mood: '', tags: [], fecha: '', extras: [], cuerpo: limpio };
+      const datos = { titulo: '', mood: '', tags: [], fecha: '', portada: '', portadaAlt: '', extras: [], cuerpo: limpio };
       if (m) {
         datos.cuerpo = m[2];
         let ultima = '';
@@ -366,6 +399,8 @@
           else if (k[1] === 'mood') datos.mood = quitarComillas(valor);
           else if (k[1] === 'tags') datos.tags = leerTags(valor);
           else if (k[1] === 'date') datos.fecha = valor;
+          else if (k[1] === 'portada') datos.portada = quitarComillas(valor);
+          else if (k[1] === 'portada_alt') datos.portadaAlt = quitarComillas(valor);
           else if (k[1] !== 'layout') datos.extras.push(l);
         });
       }
@@ -386,6 +421,10 @@
         'date: ' + d.fecha + '\n' +
         'mood: ' + JSON.stringify(d.mood) + '\n' +
         'tags: ' + JSON.stringify(d.etiquetas) + '\n';
+      if (d.portada) {
+        fm += 'portada: ' + JSON.stringify(d.portada) + '\n';
+        if (d.portadaAlt) fm += 'portada_alt: ' + JSON.stringify(d.portadaAlt) + '\n';
+      }
       (d.extras || []).forEach((l) => { fm += l + '\n'; });
       return fm + '---\n' + d.texto + '\n';
     }
@@ -402,7 +441,7 @@
       try {
         localStorage.setItem('blog_borrador', JSON.stringify({
           titulo: $('titulo').value, texto: $('texto').value,
-          etiquetas: $('etiquetas').value, mood: moodActual
+          etiquetas: $('etiquetas').value, mood: moodActual, portada: portadaActual
         }));
       } catch (e) {}
     }
@@ -414,6 +453,8 @@
         $('texto').value = b.texto || '';
         $('etiquetas').value = b.etiquetas || '';
         if (b.mood) elegirMood(b.mood);
+        portadaActual = b.portada || null;
+        pintarFotos();
       } catch (e) {}
     }
     function borrarBorrador() { try { localStorage.removeItem('blog_borrador'); } catch (e) {} }
@@ -449,6 +490,10 @@
       $('etiquetas').value = '';
       $('fecha').value = ahoraLocal();
       elegirMood('🙂');
+      portadaActual = null;
+      fotosSesion.length = 0;
+      $('estado-fotos').hidden = true;
+      pintarFotos();
     }
     function modoEditor() {
       const e = !!editando;
@@ -478,6 +523,9 @@
         $('etiquetas').value = d.tags.join(', ');
         $('fecha').value = editando.fechaInput;
         elegirMood(d.mood || '🙂');
+        portadaActual = d.portada ? { ruta: d.portada, alt: d.portadaAlt || '' } : null;
+        fotosSesion.length = 0;
+        pintarFotos();
         modoEditor();
         estado.hidden = true;
         window.scrollTo(0, 0);
@@ -504,6 +552,7 @@
       const fechaStr = (editando && valorFecha === editando.fechaInput) ? editando.fechaLinea : fechaTexto(valorFecha);
       const contenido = armarContenido({
         titulo: titulo, fecha: fechaStr, mood: moodActual, etiquetas: etiquetas,
+        portada: portadaActual ? portadaActual.ruta : '', portadaAlt: portadaActual ? portadaActual.alt : '',
         extras: editando ? editando.extras : [], texto: texto
       });
 
@@ -749,6 +798,141 @@
       }
     }
 
+    /* ---------- Fotos ---------- */
+    function cargarImagen(archivo) {
+      return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(archivo);
+        const img = new Image();
+        img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error('No pude leer esa foto. Prueba con una imagen JPG o PNG.'));
+        };
+        img.src = url;
+      });
+    }
+    // Achica a 1600 px, la guarda como JPG y le quita los datos ocultos (como la ubicación)
+    async function comprimirImagen(archivo) {
+      if (archivo.size > 30 * 1024 * 1024) throw new Error('Esa foto pesa demasiado (más de 30 MB).');
+      const img = await cargarImagen(archivo);
+      const maximo = 1600;
+      const escala = Math.min(1, maximo / Math.max(img.naturalWidth, img.naturalHeight));
+      const w = Math.max(1, Math.round(img.naturalWidth * escala));
+      const h = Math.max(1, Math.round(img.naturalHeight * escala));
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      let calidad = 0.82;
+      let blob = null;
+      for (;;) {
+        blob = await new Promise((res) => canvas.toBlob(res, 'image/jpeg', calidad));
+        if (!blob) throw new Error('No pude preparar esa foto.');
+        if (blob.size <= 1500000 || calidad <= 0.5) break;
+        calidad -= 0.1;
+      }
+      return blob;
+    }
+    async function blobABase64(blob) {
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      let bin = '';
+      for (let i = 0; i < bytes.length; i += 0x8000) {
+        bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+      }
+      return btoa(bin);
+    }
+    function rutaFoto(nombre) {
+      const d = new Date();
+      const base = (slug(nombre.replace(/\.[^.]+$/, '')) || 'foto').slice(0, 40);
+      return '/assets/img/' + d.getFullYear() + '/' + pad(d.getMonth() + 1) + '/' + base + '-' + Date.now().toString(36) + '.jpg';
+    }
+    function altFoto() {
+      return $('foto-alt').value.replace(/[\[\]\r\n]/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+    function vistaFoto(ruta) {
+      const f = fotosSesion.find((x) => x.ruta === ruta);
+      return f ? f.objUrl : BASE + ruta;
+    }
+
+    async function subirFotos(archivos) {
+      const estado = $('estado-fotos');
+      for (const archivo of archivos) {
+        mostrar(estado, 'Preparando la foto...');
+        try {
+          const blob = await comprimirImagen(archivo);
+          mostrar(estado, 'Subiendo la foto...');
+          const ruta = rutaFoto(archivo.name);
+          const r = await gh('/contents/' + ruta.slice(1), {
+            method: 'PUT',
+            body: JSON.stringify({ message: 'Subir foto', content: await blobABase64(blob), branch: BRANCH })
+          });
+          if (!r.ok) throw new Error(mensajeHttp(r.status));
+          fotosSesion.unshift({ ruta: ruta, objUrl: URL.createObjectURL(blob) });
+          pintarFotos();
+          mostrar(estado, 'Foto subida. Elige si va de portada o dentro del texto.', 'ok');
+        } catch (e) {
+          mostrar(estado, e.message || 'No se pudo subir la foto. Revisa tu internet.', 'error');
+        }
+      }
+    }
+
+    function ponerPortada(f) {
+      portadaActual = { ruta: f.ruta, alt: altFoto() };
+      pintarFotos();
+      guardarBorrador();
+      mostrar($('estado-fotos'), 'Listo, esa foto va de portada.', 'ok');
+    }
+    function insertarFoto(f) {
+      const t = $('texto');
+      const md = '\n\n![' + (altFoto() || 'Foto') + '](' + BASE + f.ruta + ')\n\n';
+      const ini = t.selectionStart;
+      const fin = t.selectionEnd;
+      t.value = t.value.slice(0, ini) + md + t.value.slice(fin);
+      t.selectionStart = t.selectionEnd = ini + md.length;
+      t.dispatchEvent(new Event('input'));
+      mostrar($('estado-fotos'), 'Foto insertada en el texto.', 'ok');
+    }
+
+    function pintarFotos() {
+      const pc = $('portada-actual');
+      pc.textContent = '';
+      if (portadaActual) {
+        const img = el('img', 'foto-mini');
+        img.src = vistaFoto(portadaActual.ruta);
+        img.alt = portadaActual.alt || 'Portada';
+        const info = el('div', 'foto-info');
+        info.append(el('strong', '', 'Portada de la entrada'));
+        const quitar = el('button', 'btn btn-suave btn-peligro', 'Quitar portada');
+        quitar.type = 'button';
+        quitar.addEventListener('click', () => { portadaActual = null; pintarFotos(); guardarBorrador(); });
+        info.append(quitar);
+        pc.append(img, info);
+        pc.hidden = false;
+      } else {
+        pc.hidden = true;
+      }
+      const ul = $('fotos-lista');
+      ul.textContent = '';
+      fotosSesion.forEach((f) => {
+        const li = el('li', 'foto-item');
+        const img = el('img', 'foto-mini');
+        img.src = f.objUrl;
+        img.alt = 'Foto subida';
+        const acc = el('div', 'foto-info');
+        const bP = el('button', 'btn btn-suave', 'Poner de portada');
+        bP.type = 'button';
+        bP.addEventListener('click', () => ponerPortada(f));
+        const bI = el('button', 'btn btn-suave', 'Insertar en el texto');
+        bI.type = 'button';
+        bI.addEventListener('click', () => insertarFoto(f));
+        acc.append(bP, bI);
+        li.append(img, acc);
+        ul.append(li);
+      });
+    }
+
     /* ---------- Inicio ---------- */
     pintarMoods();
     $('fecha').value = ahoraLocal();
@@ -769,6 +953,12 @@
       caja.querySelector('.in-titulo').focus();
     });
     $('sobre-guardar').addEventListener('click', guardarSobre);
+    $('foto-btn').addEventListener('click', () => $('foto-archivo').click());
+    $('foto-archivo').addEventListener('change', async (e) => {
+      const archivos = Array.from(e.target.files);
+      e.target.value = '';
+      if (archivos.length) await subirFotos(archivos);
+    });
 
     if (leerToken()) irAPanel(); else irALogin();
   </script>
