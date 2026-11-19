@@ -4,6 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#e8f5ff">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Mi blog">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>Panel | Cómo me fue hoy</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -105,6 +112,12 @@
     .previa-tarjeta { max-width: 21rem; margin: 0 0 1.5rem; }
     .previa-tarjeta .tarjeta { transform: none; }
     .universos { margin: 0; }
+    .instalar { margin-top: 2.5rem; background: var(--papel); border: var(--grosor) solid var(--tinta); border-radius: 18px; padding: 0.8rem 1rem; box-shadow: 3px 3px 0 var(--tinta); }
+    .instalar[hidden] { display: none; }
+    .instalar summary { cursor: pointer; font-family: var(--fuente-titulo); font-weight: 700; font-size: 1.1rem; }
+    .instalar summary:focus-visible { outline: 4px solid var(--enlace); outline-offset: 4px; border-radius: 8px; }
+    .instalar-cuerpo { margin-top: 0.75rem; }
+    .instalar-cuerpo p { margin: 0 0 0.75rem; }
   </style>
 </head>
 <body>
@@ -233,6 +246,17 @@
         </div>
         <p id="estado-sobre" class="estado" role="status" aria-live="polite" hidden></p>
       </div>
+
+      <!-- Instalar como app -->
+      <details id="bloque-instalar" class="instalar">
+        <summary>📲 Instalar el panel como app en tu celular</summary>
+        <div class="instalar-cuerpo">
+          <button type="button" id="btn-instalar" class="btn" hidden>Instalar ahora</button>
+          <p><strong>Android (Chrome):</strong> toca los tres puntitos de arriba y elige <em>Instalar app</em> (o <em>Agregar a la pantalla principal</em>).</p>
+          <p><strong>iPhone (Safari):</strong> toca el botón de compartir y elige <em>Agregar a pantalla de inicio</em>.</p>
+          <p class="ayuda">En iPhone la app guarda su propia sesión, así que tendrás que pegar tu token otra vez la primera vez que la abras.</p>
+        </div>
+      </details>
     </section>
   </main>
 
@@ -1230,6 +1254,35 @@
     function programarVista() {
       if (vistaPendiente) clearTimeout(vistaPendiente);
       vistaPendiente = setTimeout(() => { vistaPendiente = null; actualizarVista(); }, 120);
+    }
+
+    /* ---------- Instalar como app ---------- */
+    let promptInstalar = null;
+    function yaEsApp() {
+      return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+    }
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      promptInstalar = e;
+      $('btn-instalar').hidden = false;
+    });
+    window.addEventListener('appinstalled', () => {
+      promptInstalar = null;
+      $('btn-instalar').hidden = true;
+      $('bloque-instalar').hidden = true;
+    });
+    $('btn-instalar').addEventListener('click', async () => {
+      if (!promptInstalar) return;
+      promptInstalar.prompt();
+      try { await promptInstalar.userChoice; } catch (e) {}
+      promptInstalar = null;
+      $('btn-instalar').hidden = true;
+    });
+    if (yaEsApp()) $('bloque-instalar').hidden = true;
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js', { scope: './' }).catch(() => {});
+      });
     }
 
     /* ---------- Inicio ---------- */
