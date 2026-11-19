@@ -4,6 +4,8 @@ title: "#regresando al infierno"
 date: 2026-11-16 08:17:00 -0600
 mood: "🥳"
 tags: ["viaje","familia","regalo"]
+calificacion: 5
+universo: "pocoyo"
 ---
 okei, me levante muy a gusto y para compensar q era el unico tomto que no cambio de telefono ahora si me llevaron a comprarlo muejejejejejej
 
