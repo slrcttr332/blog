@@ -4,6 +4,8 @@ title: "i seem pretty boring for a boy so busy :D"
 date: 2026-11-13 21:52:00 -0600
 mood: "😴"
 tags: ["familia","dia-normal","infantil"]
+calificacion: 5
+universo: "harry-potter"
 ---
 estaba aburrido y dije que queria hacer un blog sobre mi para que escriba cositas que me pasan en mi dia normal, entonces aqui ando JAJAJAJ
 
