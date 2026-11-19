@@ -4,6 +4,8 @@ title: "nuevo cel nuevo yo"
 date: 2026-11-17 22:57:00 -0600
 mood: "😌"
 tags: ["manualidad","virtual","dia-normal"]
+calificacion: 4
+universo: "nutrias"
 ---
 despues de 2 dias por fin pude hacer la copia de seguridad de mi whatsapp, 20 GB de puro ignorar gente e incomodarlas con mis grandes stickers, pero oficialmente ya fue
 
