@@ -4,6 +4,8 @@ title: "definición de fomo"
 date: 2026-11-15 00:19:00 -0600
 mood: "😤"
 tags: ["familia","amigos","fomo"]
+calificacion: 4
+universo: "chucky"
 ---
 primero q nada, porque toda mi familia cambió de teléfono hoy menos yo??? ESO ES FOMO EN SU MÁXIMA EXPRESIÓN 
 
