@@ -7,8 +7,9 @@
   <title>Panel | Cómo me fue hoy</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;1,400&family=Cinzel:wght@600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/universos.css">
   <style>
     .cabecera, .contenido, .pie { width: min(100% - 2rem, 46rem); }
     .campo { margin: 0 0 1.4rem; border: 0; padding: 0; }
@@ -101,6 +102,9 @@
         max-height: calc(100vh - 2rem); overflow: auto; margin: 0; padding: 0.25rem 0.5rem 1rem 0.25rem;
       }
     }
+    .previa-tarjeta { max-width: 21rem; margin: 0 0 1.5rem; }
+    .previa-tarjeta .tarjeta { transform: none; }
+    .universos { margin: 0; }
   </style>
 </head>
 <body>
@@ -151,6 +155,12 @@
           <p class="ayuda" id="calif-texto">Sin calificar. Toca la misma estrella otra vez para quitarla.</p>
         </fieldset>
 
+        <fieldset class="campo">
+          <legend>Universo de la entrada</legend>
+          <div class="chips universos" id="universos"></div>
+          <p class="ayuda">Cambia el estilo de la tarjeta y de la entrada. Míralo en la vista previa.</p>
+        </fieldset>
+
         <div class="campo">
           <label for="fecha">Fecha y hora</label>
           <input type="datetime-local" id="fecha">
@@ -169,7 +179,9 @@
         </div>
 
         <aside class="vista-previa" aria-label="Vista previa de la entrada">
-          <p class="vista-previa-etq">👀 Vista previa: así se verá tu entrada</p>
+          <p class="vista-previa-etq">👀 Tarjeta del inicio</p>
+          <div id="vista-tarjeta" class="previa-tarjeta"></div>
+          <p class="vista-previa-etq">👀 La entrada completa</p>
           <div id="vista-contenido"></div>
           <p class="ayuda">Es una aproximación. Las listas dentro de listas y el HTML no se muestran igual.</p>
         </aside>
@@ -241,6 +253,12 @@
     let editando = null; // { path, sha, extras, fechaLinea, fechaInput }
     let portadaActual = null; // { ruta, alt }
     let calificacionActual = 0; // 0 = sin calificar
+    let universoActual = ''; // '' = clásico
+    const UNIVERSOS = [
+      ['', 'Clásico', '🎨'], ['galaxia', 'Galaxia', '🌌'], ['harry-potter', 'Harry Potter', '⚡'],
+      ['chucky', 'Chucky', '🧵'], ['programacion', 'Programación', '💻'], ['nutrias', 'Nutrias', '🦦'],
+      ['olivia', 'Olivia Rodrigo', '🦋'], ['pocoyo', 'Pocoyo', '🔵']
+    ];
     const fotosSesion = []; // { ruta, objUrl }
     const itemsPorRuta = new Map();
     const RUTA_SOBRE = '_data/sobre_mi.json';
@@ -417,7 +435,7 @@
     function parsear(texto, nombre) {
       const limpio = texto.replace(/\r\n/g, '\n');
       const m = limpio.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
-      const datos = { titulo: '', mood: '', tags: [], fecha: '', portada: '', portadaAlt: '', calificacion: 0, extras: [], cuerpo: limpio };
+      const datos = { titulo: '', mood: '', tags: [], fecha: '', portada: '', portadaAlt: '', calificacion: 0, universo: '', extras: [], cuerpo: limpio };
       if (m) {
         datos.cuerpo = m[2];
         let ultima = '';
@@ -436,6 +454,7 @@
           else if (k[1] === 'tags') datos.tags = leerTags(valor);
           else if (k[1] === 'date') datos.fecha = valor;
           else if (k[1] === 'calificacion') datos.calificacion = Math.min(5, Math.max(0, parseInt(quitarComillas(valor), 10) || 0));
+          else if (k[1] === 'universo') datos.universo = quitarComillas(valor);
           else if (k[1] === 'portada') datos.portada = quitarComillas(valor);
           else if (k[1] === 'portada_alt') datos.portadaAlt = quitarComillas(valor);
           else if (k[1] !== 'layout') datos.extras.push(l);
@@ -459,6 +478,7 @@
         'mood: ' + JSON.stringify(d.mood) + '\n' +
         'tags: ' + JSON.stringify(d.etiquetas) + '\n';
       if (d.calificacion) fm += 'calificacion: ' + d.calificacion + '\n';
+      if (d.universo) fm += 'universo: ' + JSON.stringify(d.universo) + '\n';
       if (d.portada) {
         fm += 'portada: ' + JSON.stringify(d.portada) + '\n';
         if (d.portadaAlt) fm += 'portada_alt: ' + JSON.stringify(d.portadaAlt) + '\n';
@@ -479,7 +499,7 @@
       try {
         localStorage.setItem('blog_borrador', JSON.stringify({
           titulo: $('titulo').value, texto: $('texto').value,
-          etiquetas: $('etiquetas').value, mood: moodActual, portada: portadaActual, calificacion: calificacionActual
+          etiquetas: $('etiquetas').value, mood: moodActual, portada: portadaActual, calificacion: calificacionActual, universo: universoActual
         }));
       } catch (e) {}
     }
@@ -494,6 +514,7 @@
         portadaActual = b.portada || null;
         pintarFotos();
         elegirCalificacion(b.calificacion || 0);
+        elegirUniverso(b.universo || '');
       } catch (e) {}
     }
     function borrarBorrador() { try { localStorage.removeItem('blog_borrador'); } catch (e) {} }
@@ -535,6 +556,7 @@
       $('estado-fotos').hidden = true;
       pintarFotos();
       elegirCalificacion(0);
+      elegirUniverso('');
     }
     function modoEditor() {
       const e = !!editando;
@@ -568,6 +590,7 @@
         fotosSesion.length = 0;
         pintarFotos();
         elegirCalificacion(d.calificacion);
+        elegirUniverso(d.universo || '');
         modoEditor();
         estado.hidden = true;
         window.scrollTo(0, 0);
@@ -594,7 +617,7 @@
       const fechaStr = (editando && valorFecha === editando.fechaInput) ? editando.fechaLinea : fechaTexto(valorFecha);
       const contenido = armarContenido({
         titulo: titulo, fecha: fechaStr, mood: moodActual, etiquetas: etiquetas,
-        calificacion: calificacionActual,
+        calificacion: calificacionActual, universo: universoActual,
         portada: portadaActual ? portadaActual.ruta : '', portadaAlt: portadaActual ? portadaActual.alt : '',
         extras: editando ? editando.extras : [], texto: texto
       });
@@ -1007,6 +1030,63 @@
       }
     }
 
+    /* ---------- Universo ---------- */
+    function elegirUniverso(id) {
+      universoActual = id;
+      programarVista();
+      document.querySelectorAll('#universos .chip').forEach((b) => {
+        b.setAttribute('aria-pressed', String(b.dataset.id === id));
+      });
+    }
+    function pintarUniversos() {
+      const cont = $('universos');
+      UNIVERSOS.forEach(([id, nombre, emoji]) => {
+        const b = el('button', 'chip', emoji + ' ' + nombre);
+        b.type = 'button';
+        b.dataset.id = id;
+        b.setAttribute('aria-pressed', 'false');
+        b.addEventListener('click', () => { elegirUniverso(id); guardarBorrador(); });
+        cont.append(b);
+      });
+      elegirUniverso(universoActual);
+    }
+
+    function crearTarjetaVista() {
+      const card = el('div', 'tarjeta' + (universoActual ? ' u-' + universoActual : ''));
+      const top = el('div', 'tarjeta-top');
+      const bur = el('span', 'mood-burbuja', moodActual);
+      bur.setAttribute('aria-hidden', 'true');
+      const datos = el('div', 'tarjeta-datos');
+      datos.append(el('time', '', $('fecha').value ? fechaBonita($('fecha').value) : ''));
+      if (calificacionActual) datos.append(estrellasVista(calificacionActual));
+      top.append(bur, datos);
+      card.append(top);
+      if (portadaActual) {
+        const img = el('img', 'tarjeta-foto');
+        img.src = vistaFoto(portadaActual.ruta);
+        img.alt = '';
+        card.append(img);
+      }
+      const cuerpo = el('div', 'tarjeta-cuerpo');
+      const h2 = el('h2');
+      h2.append(el('a', '', $('titulo').value.trim() || 'Aquí va tu título'));
+      cuerpo.append(h2);
+      const bloque = $('texto').value.replace(/\r\n/g, '\n').split(/\n\s*\n/).find((b) => b.trim()) || '';
+      const tmp = document.createElement('div');
+      tmp.innerHTML = renderMarkdown(bloque);
+      let extracto = tmp.textContent.replace(/\s+/g, ' ').trim();
+      if (extracto.length > 130) extracto = extracto.slice(0, 127).trimEnd() + '...';
+      if (extracto) cuerpo.append(el('p', '', extracto));
+      const tags = Array.from(new Set($('etiquetas').value.split(',').map((t) => slug(t.replace(/^#/, ''))).filter(Boolean)));
+      if (tags.length) {
+        const p = el('p', 'etiquetas');
+        tags.forEach((t) => p.append(el('span', 'etiqueta', '#' + t)));
+        cuerpo.append(p);
+      }
+      card.append(cuerpo);
+      return card;
+    }
+
     /* ---------- Vista previa en vivo ---------- */
     function esc(t) {
       return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -1112,7 +1192,10 @@
       const caja = $('vista-contenido');
       if (!caja) return;
       caja.textContent = '';
-      const hoja = el('div', 'post-hoja');
+      const cajaTarjeta = $('vista-tarjeta');
+      cajaTarjeta.textContent = '';
+      cajaTarjeta.append(crearTarjetaVista());
+      const hoja = el('div', 'post-hoja' + (universoActual ? ' u-' + universoActual : ''));
       const cab = el('header', 'post-cabecera');
       const mood = el('div', 'mood', moodActual);
       mood.setAttribute('aria-hidden', 'true');
@@ -1152,6 +1235,7 @@
     /* ---------- Inicio ---------- */
     pintarMoods();
     pintarEstrellas();
+    pintarUniversos();
     $('fecha').value = ahoraLocal();
     cargarBorrador();
     modoEditor();

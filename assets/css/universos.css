@@ -1,0 +1,120 @@
+/* ===== Universos: un estilo distinto por entrada ===== */
+.tarjeta[class*=" u-"] .etiquetas { padding-right: 2.8rem; }
+.post-hoja[class*=" u-"] { position: relative; }
+.post-hoja[class*=" u-"]::after {
+  position: absolute; top: 1.1rem; right: 1.3rem; font-size: 2.1rem; line-height: 1; pointer-events: none;
+}
+.tarjeta[class*=" u-"]::after {
+  position: absolute; right: 0.9rem; bottom: 0.7rem; font-size: 1.5rem; line-height: 1; pointer-events: none;
+}
+
+/* ---------- Galaxia ---------- */
+.tarjeta.u-galaxia, .post-hoja.u-galaxia {
+  --papel: #17133f; --tinta: #e6e1ff; --suave: #b3acea; --acento-fondo: #3a2f8f; --acento: #6a3fd9;
+  --enlace: #a9bcff; --amarillo: #ffd166; --estrella-off: #2f2a6b; --cita-fondo: #221c5a;
+  --sombra: 5px 5px 0 #6a4cff; --sombra-hover: 7px 7px 0 #6a4cff;
+  --c: linear-gradient(135deg, #5b2a86, #2b2f8f);
+  color: var(--tinta); background-color: var(--papel);
+  background-image:
+    radial-gradient(2px 2px at 12% 22%, #fff 99%, transparent), radial-gradient(1.5px 1.5px at 28% 68%, #fff 99%, transparent),
+    radial-gradient(1.5px 1.5px at 47% 36%, #cfc6ff 99%, transparent), radial-gradient(1.5px 1.5px at 63% 82%, #fff 99%, transparent),
+    radial-gradient(2px 2px at 78% 24%, #ffe9a8 99%, transparent), radial-gradient(1.5px 1.5px at 90% 58%, #fff 99%, transparent),
+    radial-gradient(1.5px 1.5px at 8% 90%, #cfc6ff 99%, transparent), radial-gradient(1.5px 1.5px at 55% 8%, #fff 99%, transparent);
+}
+.tarjeta.u-galaxia::after, .post-hoja.u-galaxia::after { content: "🪐"; }
+
+/* ---------- Harry Potter ---------- */
+.tarjeta.u-harry-potter, .post-hoja.u-harry-potter {
+  --papel: #f4e4bf; --tinta: #3b1d12; --suave: #6a4631; --acento-fondo: #e8c870; --acento: #7b1e2b;
+  --enlace: #7b1e2b; --amarillo: #d4a017; --estrella-off: #f4e4bf; --cita-fondo: #ead3a0;
+  --sombra: 5px 5px 0 #7b1e2b; --sombra-hover: 7px 7px 0 #7b1e2b;
+  --c: #7b1e2b;
+  color: var(--tinta); background-color: var(--papel);
+  background-image: radial-gradient(ellipse at 50% 50%, #f9edcf 0%, #ecd6a0 100%);
+  border-style: double; border-width: 6px;
+}
+.tarjeta.u-harry-potter .tarjeta-top { color: #f6d77a; }
+.u-harry-potter h1, .u-harry-potter h2 { font-family: "Cinzel", Georgia, "Times New Roman", serif; letter-spacing: 0.01em; }
+.tarjeta.u-harry-potter::after, .post-hoja.u-harry-potter::after { content: "⚡"; }
+
+/* ---------- Chucky ---------- */
+.tarjeta.u-chucky, .post-hoja.u-chucky {
+  --papel: #fff6ea; --tinta: #2b1111; --suave: #6b3b3b; --acento-fondo: #ffd2c2; --acento: #c1121f;
+  --enlace: #b0101c; --amarillo: #ff9f1c; --estrella-off: #fff6ea; --cita-fondo: #ffe6d6;
+  --sombra: 5px 5px 0 #c1121f; --sombra-hover: 7px 7px 0 #c1121f;
+  --c: repeating-linear-gradient(90deg, #c1121f 0 16px, #1f7a3d 16px 32px);
+  color: var(--tinta); border-style: dashed; border-width: 4px;
+}
+.tarjeta.u-chucky .tarjeta-top { color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75); border-bottom-style: dashed; border-bottom-width: 4px; }
+.tarjeta.u-chucky::after, .post-hoja.u-chucky::after { content: "🧵"; }
+
+/* ---------- Programación ---------- */
+.tarjeta.u-programacion, .post-hoja.u-programacion {
+  --papel: #0d1117; --tinta: #c9d1d9; --suave: #8b949e; --acento-fondo: #12261a; --acento: #1f7a30;
+  --enlace: #58a6ff; --amarillo: #e3b341; --estrella-off: #21262d; --cita-fondo: #161b22;
+  --sombra: 5px 5px 0 #238636; --sombra-hover: 7px 7px 0 #238636;
+  --c: #161b22;
+  color: var(--tinta); background-color: var(--papel); border-color: #3fb950;
+  font-family: "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+.u-programacion h1, .u-programacion h2, .u-programacion .etiqueta, .u-programacion .chip {
+  font-family: "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace; letter-spacing: -0.01em;
+}
+.tarjeta.u-programacion .tarjeta-top {
+  background-color: #161b22; color: #3fb950; border-bottom-color: #3fb950;
+  background-image:
+    radial-gradient(circle at calc(100% - 14px) 50%, #27c93f 5px, transparent 6px),
+    radial-gradient(circle at calc(100% - 34px) 50%, #ffbd2e 5px, transparent 6px),
+    radial-gradient(circle at calc(100% - 54px) 50%, #ff5f56 5px, transparent 6px);
+}
+.tarjeta.u-programacion .tarjeta-top time::before, .post-hoja.u-programacion .meta::before { content: "// "; color: #3fb950; }
+.tarjeta.u-programacion h2 a::before, .post-hoja.u-programacion h1::before { content: "> "; color: #3fb950; }
+.tarjeta.u-programacion::after, .post-hoja.u-programacion::after { content: "</>"; color: #3fb950; font-weight: 700; font-size: 1.1rem; }
+.post-hoja.u-programacion::after { top: 1.4rem; }
+.tarjeta.u-programacion .etiquetas { padding-right: 3.2rem; }
+
+/* ---------- Nutrias ---------- */
+.tarjeta.u-nutrias, .post-hoja.u-nutrias {
+  --papel: #e9f8fc; --tinta: #4a2f1d; --suave: #7a5a45; --acento-fondo: #ffe2b5; --acento: #8b5e3c;
+  --enlace: #0d6f8f; --amarillo: #f2b84b; --estrella-off: #ffffff; --cita-fondo: #d4f0f7;
+  --sombra: 5px 5px 0 #8b5e3c; --sombra-hover: 7px 7px 0 #8b5e3c;
+  --c: #7dd3e8;
+  color: var(--tinta); background-color: var(--papel);
+  background-image:
+    radial-gradient(circle at 88% 22%, rgba(255, 255, 255, 0.95) 0 7px, transparent 8px),
+    radial-gradient(circle at 94% 34%, rgba(255, 255, 255, 0.85) 0 4px, transparent 5px),
+    radial-gradient(circle at 8% 92%, rgba(125, 211, 232, 0.4) 0 11px, transparent 12px),
+    radial-gradient(circle at 18% 80%, rgba(125, 211, 232, 0.35) 0 6px, transparent 7px);
+}
+.tarjeta.u-nutrias::after, .post-hoja.u-nutrias::after { content: "🦦"; }
+
+/* ---------- Olivia Rodrigo ---------- */
+.tarjeta.u-olivia, .post-hoja.u-olivia {
+  --papel: #f6ecff; --tinta: #2a0a45; --suave: #6a4a8c; --acento-fondo: #ffd0f0; --acento: #7a2fd0;
+  --enlace: #6a1fc0; --amarillo: #f5b301; --estrella-off: #ffffff; --cita-fondo: #ead7ff;
+  --sombra: 5px 5px 0 #a45dff; --sombra-hover: 7px 7px 0 #a45dff;
+  --c: linear-gradient(135deg, #c79bff, #ff9ee5);
+  color: var(--tinta); background-color: var(--papel);
+  background-image:
+    radial-gradient(1.5px 1.5px at 15% 25%, #c79bff 99%, transparent), radial-gradient(1.5px 1.5px at 72% 62%, #ff9ee5 99%, transparent),
+    radial-gradient(1px 1px at 40% 80%, #a45dff 99%, transparent), radial-gradient(1.5px 1.5px at 85% 18%, #ff9ee5 99%, transparent),
+    radial-gradient(1px 1px at 30% 52%, #c79bff 99%, transparent), radial-gradient(1px 1px at 60% 30%, #a45dff 99%, transparent);
+}
+.tarjeta.u-olivia::after, .post-hoja.u-olivia::after { content: "🦋"; }
+
+/* ---------- Pocoyo ---------- */
+.tarjeta.u-pocoyo, .post-hoja.u-pocoyo {
+  --papel: #ffffff; --tinta: #0b3d91; --suave: #3f6bb5; --acento-fondo: #dbe9ff; --acento: #d62839;
+  --enlace: #1d5fd6; --amarillo: #ffd23f; --estrella-off: #ffffff; --cita-fondo: #eaf2ff;
+  --sombra: 5px 5px 0 #2563d9; --sombra-hover: 7px 7px 0 #2563d9;
+  --c: #2563d9;
+  color: var(--tinta);
+}
+.tarjeta.u-pocoyo .tarjeta-top { color: #fff; }
+.tarjeta.u-pocoyo .etiquetas { padding-right: 4.2rem; }
+.tarjeta.u-pocoyo::after, .post-hoja.u-pocoyo::after {
+  content: ""; width: 14px; height: 14px; border-radius: 50%; background: #e63946;
+  box-shadow: -22px 0 0 #ffd23f, -44px 0 0 #3a86ff;
+}
+.tarjeta.u-pocoyo::after { right: 1rem; bottom: 1.1rem; }
+.post-hoja.u-pocoyo::after { top: 1.6rem; right: 1.4rem; }

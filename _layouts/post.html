@@ -2,7 +2,7 @@
 layout: default
 ---
 <article class="post">
-  <div class="post-hoja">
+  <div class="post-hoja{% if page.universo %} u-{{ page.universo | slugify }}{% endif %}">
     <header class="post-cabecera">
       {% if page.mood %}<div class="mood" aria-hidden="true">{{ page.mood }}</div>{% endif %}
       <h1>{{ page.title }}</h1>
