@@ -4,6 +4,8 @@ title: "recta final de itaes 🙏🏻"
 date: 2026-11-14 22:52:00 -0600
 mood: "🤔"
 tags: ["ingles","introspeccion","familia"]
+calificacion: 3
+universo: "galaxia"
 ---
 hoy en mis clases de inglés me di cuenta de que era muy juzgón and i I couldn't agree more 🫰🏻
 
