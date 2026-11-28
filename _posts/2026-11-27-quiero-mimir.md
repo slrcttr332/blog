@@ -1,10 +1,10 @@
 ---
 layout: post
 title: "quiero mimir"
-date: 2026-11-27 22:23:00 -0600
+date: 2026-11-27 23:23:00 -0600
 mood: "😴"
 tags: ["viaje","familia","aventura"]
-calificacion: 5
+calificacion: 3
 ---
 por fin viernes y eso significa regresar a mi casita, un día relax en la uni y muy frío, pero rico la verdad, aunque un poco de calor no hace daño tampoco 
 
