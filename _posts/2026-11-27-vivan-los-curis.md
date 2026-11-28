@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "vivan los curis"
-date: 2026-11-27 22:19:00 -0600
+date: 2026-11-26 22:19:00 -0600
 mood: "🤔"
 tags: ["evento","introspeccion","dia-normal"]
 calificacion: 4
