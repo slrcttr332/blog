@@ -13,3 +13,5 @@ examen con la mejor profe de la UP y una rifa en la que estuve más salado que c
 un viaje con un ebrio y vale #filtrosdesnapchat y por fin en mi casita después de 4 horas sin dormir qpdo conmigo, lo intenté mucho lo juro
 
 > deep ocean o lavanda?
+
+![Foto](/blog/assets/img/2026/11/114742-mwzx0o6i.jpg)
